@@ -54,18 +54,24 @@ def elara_reflect() -> str:
 @mcp.tool()
 def elara_insight(insight_type: str = "pulse") -> str:
     """
-    Relationship pulse or contrarian blind spot analysis.
+    Relationship pulse, blind spot analysis, or user-state inference.
 
     Args:
         insight_type: What to analyze.
             "pulse" — relationship health: session frequency, drift/work balance, mood trajectory
             "blind_spots" — what am I missing: stale goals, repeating corrections, abandoned projects
-            "both" — run both analyses
+            "user_state" — infer user energy, focus, engagement, frustration + suggested approach
+            "both" — run pulse + blind_spots
 
     Returns:
         Analysis results
     """
     lines = []
+
+    if insight_type == "user_state":
+        from daemon.user_state import infer_user_state, format_user_state
+        state = infer_user_state()
+        return format_user_state(state)
 
     if insight_type in ("pulse", "both"):
         result = pulse()
