@@ -173,6 +173,12 @@ def _apply_time_decay(state: dict) -> dict:
     if hours_passed < 0.01:
         return state
 
+    # Cap to prevent massive decay spikes from clock jumps (WSL sleep, NTP sync)
+    MAX_DECAY_HOURS = 24
+    if hours_passed > MAX_DECAY_HOURS:
+        logger.info("Capping decay hours from %.1f to %d (clock jump?)", hours_passed, MAX_DECAY_HOURS)
+        hours_passed = MAX_DECAY_HOURS
+
     temperament = state.get("temperament", TEMPERAMENT)
     decay_factor = 1 - math.exp(-DECAY_RATE * hours_passed)
     load = state.get("allostatic_load", 0)
