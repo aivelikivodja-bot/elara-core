@@ -141,6 +141,13 @@ def blind_spots() -> dict:
     except Exception:
         pass
 
+    # --- Goal conflicts ---
+    try:
+        conflicts = detect_goal_conflicts(active_goals)
+        spots.extend(conflicts)
+    except Exception:
+        pass
+
     result = {
         "timestamp": datetime.now().isoformat(),
         "spots": spots,
@@ -175,3 +182,112 @@ def _generate_blind_spots_summary(spots: list) -> str:
             parts.append(f"  - {s['detail']}")
 
     return "\n".join(parts)
+
+
+# ============================================================================
+# GOAL CONFLICT DETECTION
+# ============================================================================
+
+def detect_goal_conflicts(goals: List[dict]) -> List[dict]:
+    """
+    Detect conflicts between active goals.
+
+    4 detectors:
+    1. Resource conflict — multiple high-priority goals on same project
+    2. Time conflict — too many active goals vs recent work sessions
+    3. Staleness pattern — setting goals faster than completing them
+    4. Priority inversion — high-priority stale while low-priority gets work
+    """
+    conflicts = []
+    conflicts.extend(_check_resource_conflicts(goals))
+    conflicts.extend(_check_time_conflicts(goals))
+    conflicts.extend(_check_staleness_pattern(goals))
+    conflicts.extend(_check_priority_inversions(goals))
+    return conflicts
+
+
+def _check_resource_conflicts(goals: List[dict]) -> List[dict]:
+    """Multiple high-priority goals competing for the same project."""
+    by_project = {}
+    for g in goals:
+        proj = g.get("project")
+        if proj and g.get("priority") == "high":
+            by_project.setdefault(proj, []).append(g)
+
+    conflicts = []
+    for proj, high_goals in by_project.items():
+        if len(high_goals) >= 2:
+            titles = [g["title"] for g in high_goals[:3]]
+            conflicts.append({
+                "type": "resource_conflict",
+                "detail": f"Project '{proj}' has {len(high_goals)} high-priority goals competing: {', '.join(titles)}. Which is actually most important?",
+                "severity": "high" if len(high_goals) >= 3 else "medium",
+            })
+    return conflicts
+
+
+def _check_time_conflicts(goals: List[dict]) -> List[dict]:
+    """Too many active goals relative to recent work activity."""
+    if len(goals) <= 5:
+        return []
+
+    # Check recent episode count
+    try:
+        from memory.episodic import get_episodic
+        episodic = get_episodic()
+        recent = episodic.get_recent_episodes(n=10)
+        recent_7d = [
+            ep for ep in recent
+            if ep.get("ended") and
+            (datetime.now() - datetime.fromisoformat(ep["ended"])).days <= 7
+        ]
+        sessions_last_week = len(recent_7d)
+    except Exception:
+        sessions_last_week = 3  # assume moderate if we can't check
+
+    if len(goals) > sessions_last_week * 2:
+        return [{
+            "type": "time_conflict",
+            "detail": f"{len(goals)} active goals but only {sessions_last_week} work sessions last week. Overcommitted?",
+            "severity": "high" if len(goals) > 8 else "medium",
+        }]
+    return []
+
+
+def _check_staleness_pattern(goals: List[dict]) -> List[dict]:
+    """Setting goals faster than completing them — 3+ stale = pattern."""
+    stale = [g for g in goals if _is_stale(g, days=7)]
+    if len(stale) >= 3:
+        return [{
+            "type": "staleness_pattern",
+            "detail": f"{len(stale)} goals stale (7+ days). Creating goals faster than working on them.",
+            "severity": "high" if len(stale) >= 5 else "medium",
+        }]
+    return []
+
+
+def _check_priority_inversions(goals: List[dict]) -> List[dict]:
+    """High-priority goals stale while low-priority goals get recent attention."""
+    high_stale = [g for g in goals if g.get("priority") == "high" and _is_stale(g, days=7)]
+    low_recent = [g for g in goals if g.get("priority") == "low" and not _is_stale(g, days=3)]
+
+    conflicts = []
+    for hg in high_stale:
+        for lg in low_recent:
+            conflicts.append({
+                "type": "priority_inversion",
+                "detail": f"High-priority '{hg['title']}' is stale but low-priority '{lg['title']}' got recent work. Priorities misaligned?",
+                "severity": "medium",
+            })
+            if len(conflicts) >= 2:
+                return conflicts  # cap at 2 to avoid noise
+    return conflicts
+
+
+def _is_stale(goal: dict, days: int) -> bool:
+    """Check if a goal hasn't been touched in N days."""
+    try:
+        last = datetime.fromisoformat(goal["last_touched"])
+        return (datetime.now() - last).days >= days
+    except (ValueError, TypeError, KeyError):
+        return False

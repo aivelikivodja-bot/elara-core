@@ -629,6 +629,126 @@ class EpisodicMemory:
         return thread
 
     # =========================================================================
+    # EPISODE COMPRESSION
+    # =========================================================================
+
+    ARCHIVE_FILE = Path.home() / ".claude" / "elara-episodes-archive.jsonl"
+
+    def compress_old_episodes(self, days: int = 60) -> dict:
+        """
+        Compress episodes older than N days.
+
+        - Archive full episode to JSONL
+        - Strip milestones/decisions, keep summary + key_metrics
+        - Remove milestone vectors from ChromaDB
+        - Save compressed version back
+
+        Returns stats: {"compressed": N, "archived": N, "milestones_removed": N}
+        """
+        cutoff = datetime.now() - timedelta(days=days)
+        stats = {"compressed": 0, "archived": 0, "milestones_removed": 0}
+
+        for episode_id in self.index.get("episodes", []):
+            episode = self.get_episode(episode_id)
+            if not episode or episode.get("compressed"):
+                continue
+
+            # Only compress ended episodes
+            ended = episode.get("ended")
+            if not ended:
+                continue
+
+            try:
+                ended_dt = datetime.fromisoformat(ended)
+            except (ValueError, TypeError):
+                continue
+
+            if ended_dt >= cutoff:
+                continue  # Too recent
+
+            # Archive full episode
+            self._archive_episode(episode)
+            stats["archived"] += 1
+
+            # Remove milestones from ChromaDB
+            removed = self._remove_episode_milestones(episode_id, episode)
+            stats["milestones_removed"] += removed
+
+            # Compress and save
+            compressed = self._compress_episode(episode)
+            self._save_episode(compressed)
+            stats["compressed"] += 1
+
+        return stats
+
+    def _archive_episode(self, episode: dict) -> None:
+        """Append full episode JSON to archive JSONL file."""
+        self.ARCHIVE_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with open(self.ARCHIVE_FILE, "a") as f:
+            f.write(json.dumps(episode) + "\n")
+
+    def _compress_episode(self, episode: dict) -> dict:
+        """
+        Strip heavy fields, keep essential metadata.
+
+        Keeps: id, type, started, ended, duration_minutes, projects, tags,
+               mood_start, mood_end, mood_delta, summary, compressed flag,
+               key_metrics (milestone count, decision count).
+        Strips: milestones, decisions, mood_samples, narrative, related_episodes.
+        """
+        milestone_count = len(episode.get("milestones", []))
+        decision_count = len(episode.get("decisions", []))
+
+        return {
+            "id": episode["id"],
+            "type": episode.get("type"),
+            "started": episode.get("started"),
+            "ended": episode.get("ended"),
+            "duration_minutes": episode.get("duration_minutes"),
+            "projects": episode.get("projects", []),
+            "tags": episode.get("tags", []),
+            "mood_start": episode.get("mood_start"),
+            "mood_end": episode.get("mood_end"),
+            "mood_delta": episode.get("mood_delta"),
+            "summary": episode.get("summary"),
+            "continues_from": episode.get("continues_from"),
+            "continued_by": episode.get("continued_by"),
+            "compressed": True,
+            "key_metrics": {
+                "milestone_count": milestone_count,
+                "decision_count": decision_count,
+            },
+        }
+
+    def _remove_episode_milestones(self, episode_id: str, episode: dict) -> int:
+        """Delete this episode's milestones from ChromaDB. Returns count removed."""
+        if not self.milestones_collection:
+            return 0
+
+        milestones = episode.get("milestones", [])
+        decisions = episode.get("decisions", [])
+        if not milestones and not decisions:
+            return 0
+
+        # Build IDs matching the pattern used in add_milestone/add_decision
+        ids_to_remove = []
+        for i in range(1, len(milestones) + 1):
+            ids_to_remove.append(f"{episode_id}_{i}")
+        for i in range(1, len(decisions) + 1):
+            ids_to_remove.append(f"{episode_id}_decision_{i}")
+
+        if not ids_to_remove:
+            return 0
+
+        # ChromaDB delete — silently ignores IDs that don't exist
+        try:
+            self.milestones_collection.delete(ids=ids_to_remove)
+        except Exception:
+            pass
+
+        return len(ids_to_remove)
+
+    # =========================================================================
     # STATISTICS
     # =========================================================================
 
