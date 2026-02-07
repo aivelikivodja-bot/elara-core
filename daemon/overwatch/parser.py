@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Optional, List, Dict
 
-from daemon.overwatch.config import SYSTEM_REMINDER_RE, log
+from daemon.overwatch.config import SYSTEM_REMINDER_RE, OVERWATCH_CONTEXT_RE, log
 
 
 logger = logging.getLogger("elara.overwatch.parser")
@@ -16,8 +16,9 @@ class ParserMixin:
     """Mixin for JSONL parsing and exchange extraction."""
 
     def _clean_text(self, text: str) -> str:
-        """Strip system-reminder blocks."""
+        """Strip system-reminder and overwatch-context blocks (prevents feedback loops)."""
         text = SYSTEM_REMINDER_RE.sub('', text)
+        text = OVERWATCH_CONTEXT_RE.sub('', text)
         return text.strip()
 
     def _extract_text(self, entry: dict) -> Optional[str]:

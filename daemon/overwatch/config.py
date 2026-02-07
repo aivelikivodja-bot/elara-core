@@ -39,8 +39,9 @@ SNAPSHOT_MIN_EXCHANGES = 3   # need at least 3 exchanges before first snapshot
 TASK_COMPLETE_WORDS = {"done", "built", "fixed", "shipped", "committed", "deployed", "pushed", "created", "finished"}
 WINDING_DOWN_WORDS = {"anything else", "that's it", "what else", "done for", "calling it", "bye", "goodnight", "heading out"}
 
-# System reminder pattern
+# Patterns to strip from text before processing
 SYSTEM_REMINDER_RE = re.compile(r'<system-reminder>.*?</system-reminder>', re.DOTALL)
+OVERWATCH_CONTEXT_RE = re.compile(r'<overwatch-context>.*?</overwatch-context>', re.DOTALL)
 
 # Logging
 log = logging.getLogger("overwatch")
