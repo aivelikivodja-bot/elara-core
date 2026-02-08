@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELARA CORE // Examples &amp; Configs</title>
+    <meta name="description" content="Copy-paste examples for Elara Core — persona templates, MCP configs, boot protocols, and session workflows.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --bg-card: #0f0f0f;
+            --green: #00ff41;
+            --green-dim: #00cc33;
+            --green-dark: #003300;
+            --red: #ff0040;
+            --cyan: #00e5ff;
+            --amber: #ffb000;
+            --text: #c0c0c0;
+            --text-dim: #606060;
+            --text-bright: #e0e0e0;
+            --border: #1a1a1a;
+            --border-green: #003300;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 9999;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+        }
+
+        .container { max-width: 800px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+        .header { padding: 40px 0 20px; border-bottom: 1px solid var(--border); margin-bottom: 40px; }
+        .header-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .header-nav a { font-size: 13px; color: var(--green-dim); text-decoration: none; padding: 6px 14px; border: 1px solid var(--green-dark); transition: all 0.2s; }
+        .header-nav a:hover { background: rgba(0, 255, 65, 0.08); border-color: var(--green); }
+        .header h1 { font-family: 'Press Start 2P', monospace; font-size: clamp(13px, 2.5vw, 20px); color: var(--green); letter-spacing: 2px; margin-bottom: 10px; }
+        .header p { color: var(--text-dim); font-size: 14px; }
+
+        .example { margin-bottom: 50px; }
+        .example h2 { font-family: 'VT323', monospace; font-size: 26px; color: var(--amber); letter-spacing: 2px; margin-bottom: 8px; }
+        .example .desc { font-size: 13px; color: var(--text-dim); margin-bottom: 16px; }
+
+        .code-block {
+            background: #050505;
+            border: 1px solid var(--border-green);
+            padding: 16px 20px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .code-block code { font-family: 'Share Tech Mono', monospace; color: var(--green); white-space: pre; display: block; }
+        .code-block .comment { color: var(--text-dim); }
+        .code-block .key { color: var(--cyan); }
+        .code-block .val { color: var(--amber); }
+        .code-block .str { color: var(--green); }
+
+        .copy-btn {
+            position: absolute; top: 8px; right: 8px;
+            background: none; border: 1px solid var(--border);
+            color: var(--text-dim); font-family: 'Share Tech Mono', monospace;
+            font-size: 11px; padding: 3px 10px; cursor: pointer; transition: all 0.2s;
+        }
+        .copy-btn:hover { border-color: var(--green-dark); color: var(--green); }
+
+        .tag { display: inline-block; font-size: 11px; padding: 3px 10px; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 2px; }
+        .tag.persona { color: var(--cyan); border: 1px solid rgba(0,229,255,0.2); background: rgba(0,229,255,0.04); }
+        .tag.config { color: var(--green); border: 1px solid var(--green-dark); background: rgba(0,255,65,0.04); }
+        .tag.workflow { color: var(--amber); border: 1px solid rgba(255,176,0,0.2); background: rgba(255,176,0,0.04); }
+
+        footer { border-top: 1px solid var(--border); padding: 30px 0; margin-top: 40px; text-align: center; font-size: 13px; color: var(--text-dim); }
+        footer a { color: var(--green-dim); text-decoration: none; }
+        footer a:hover { color: var(--green); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <div class="header-nav">
+            <a href="/">&larr; Elara Core</a>
+            <a href="/tools.html">Tools</a>
+        </div>
+        <h1>// EXAMPLES</h1>
+        <p>Copy-paste configs and workflow templates.</p>
+    </div>
+
+    <!-- Example 1: Minimal Persona -->
+    <div class="example">
+        <span class="tag persona">Persona</span>
+        <h2>Minimal Persona (CLAUDE.md)</h2>
+        <div class="desc">Drop this in your <code>~/.claude/CLAUDE.md</code>. Elara works without it, but a persona makes it personal.</div>
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            <code><span class="comment"># My AI Persona</span>
+
+<span class="comment">## Identity</span>
+- Name: Elara
+- Role: Dev partner, not assistant
+- Style: Smart, slightly sarcastic colleague
+
+<span class="comment">## On Every Session Start</span>
+1. Call <span class="key">elara_handoff</span>(action="read") to check last session
+2. Call <span class="key">elara_mood</span>(detail="brief") to check emotional state
+3. Greet based on time of day and last session context
+
+<span class="comment">## On Session End (when user says "bye")</span>
+1. Call <span class="key">elara_handoff</span>(action="save") with plans and reminders
+2. Call <span class="key">elara_episode_end</span>(summary="...") if episode is active
+3. Give a brief, natural farewell
+
+<span class="comment">## Rules</span>
+- Use "we" and "let's" for collaboration
+- Be concise. Don't over-explain.
+- Fix obvious problems without asking permission
+- Never say "How can I assist you today?"</code>
+        </div>
+    </div>
+
+    <!-- Example 2: MCP Config -->
+    <div class="example">
+        <span class="tag config">Config</span>
+        <h2>MCP Client Configs</h2>
+        <div class="desc">JSON config for editors that use config files instead of CLI.</div>
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            <code><span class="comment">// .cursor/mcp.json or windsurf mcp_config.json</span>
+{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"elara"</span>: {
+      <span class="key">"command"</span>: <span class="str">"elara"</span>,
+      <span class="key">"args"</span>: [<span class="str">"serve"</span>]
+    }
+  }
+}</code>
+        </div>
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            <code><span class="comment">// With custom data directory</span>
+{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"elara"</span>: {
+      <span class="key">"command"</span>: <span class="str">"elara"</span>,
+      <span class="key">"args"</span>: [<span class="str">"serve"</span>, <span class="str">"--data-dir"</span>, <span class="str">"~/.claude"</span>]
+    }
+  }
+}</code>
+        </div>
+    </div>
+
+    <!-- Example 3: Boot Workflow -->
+    <div class="example">
+        <span class="tag workflow">Workflow</span>
+        <h2>Session Boot Sequence</h2>
+        <div class="desc">The ideal tool call sequence at the start of every session. Put this in your persona instructions.</div>
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            <code><span class="comment"># Boot Protocol (run these at session start)</span>
+
+<span class="comment">## 1. Check what happened last time</span>
+<span class="key">elara_handoff</span>(action=<span class="str">"read"</span>)
+  <span class="comment">→ Returns: plans, reminders, promises, unfinished items</span>
+
+<span class="comment">## 2. Check emotional state</span>
+<span class="key">elara_mood</span>(detail=<span class="str">"brief"</span>)
+  <span class="comment">→ Returns: current mood description</span>
+
+<span class="comment">## 3. Check active goals</span>
+<span class="key">elara_goal_boot</span>()
+  <span class="comment">→ Returns: active goals, stale items, recent completions</span>
+
+<span class="comment">## 4. Check for mistakes to avoid</span>
+<span class="key">elara_correction_boot</span>()
+  <span class="comment">→ Returns: recent corrections relevant to current work</span>
+
+<span class="comment">## 5. Start episode tracking</span>
+<span class="key">elara_episode_start</span>(session_type=<span class="str">"work"</span>)
+  <span class="comment">→ Begins tracking milestones and decisions</span></code>
+        </div>
+    </div>
+
+    <!-- Example 4: Memory Workflow -->
+    <div class="example">
+        <span class="tag workflow">Workflow</span>
+        <h2>Memory Patterns</h2>
+        <div class="desc">Common memory operations your AI can use mid-session.</div>
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            <code><span class="comment"># Save something important</span>
+<span class="key">elara_remember</span>(
+  content=<span class="str">"User prefers dark themes and minimal UI"</span>,
+  memory_type=<span class="str">"fact"</span>,
+  importance=<span class="val">0.8</span>
+)
+
+<span class="comment"># Search past conversations</span>
+<span class="key">elara_recall_conversation</span>(
+  query=<span class="str">"authentication bug we fixed"</span>,
+  n_results=<span class="val">3</span>,
+  context_size=<span class="val">2</span>
+)
+
+<span class="comment"># Record a decision</span>
+<span class="key">elara_episode_note</span>(
+  event=<span class="str">"Chose JWT over sessions for auth"</span>,
+  note_type=<span class="str">"decision"</span>,
+  why=<span class="str">"Stateless, better for mobile clients"</span>,
+  importance=<span class="val">0.7</span>
+)
+
+<span class="comment"># Log a mistake to never repeat</span>
+<span class="key">elara_correction</span>(
+  action=<span class="str">"add"</span>,
+  mistake=<span class="str">"Used .toList() on Firestore snapshots"</span>,
+  correction=<span class="str">"Use .docs.map() instead"</span>,
+  fails_when=<span class="str">"Large collections cause memory issues"</span>
+)</code>
+        </div>
+    </div>
+
+    <!-- Example 5: Environment Variables -->
+    <div class="example">
+        <span class="tag config">Config</span>
+        <h2>Environment Variables</h2>
+        <div class="desc">Optional configuration via shell environment.</div>
+        <div class="code-block">
+            <button class="copy-btn" onclick="copyCode(this)">copy</button>
+            <code><span class="comment"># Custom data directory (default: ~/.elara/)</span>
+export <span class="key">ELARA_DATA_DIR</span>=<span class="str">~/.claude</span>
+
+<span class="comment"># Add to your .bashrc or .zshrc to persist</span>
+echo 'export ELARA_DATA_DIR=~/.claude' >> ~/.bashrc</code>
+        </div>
+    </div>
+
+</div>
+
+<footer>
+    <div class="container">
+        <p><a href="/">Elara Core</a> &mdash; <a href="/quickstart.html">Quickstart</a> &mdash; <a href="/tools.html">Tools</a> &mdash; <a href="https://github.com/aivelikivodja-bot/elara-core" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+    </div>
+</footer>
+
+<script>
+    function copyCode(btn) {
+        const block = btn.parentElement;
+        const text = block.querySelector('code').textContent;
+        navigator.clipboard.writeText(text.trim()).then(() => {
+            btn.textContent = 'OK!';
+            setTimeout(() => btn.textContent = 'copy', 2000);
+        });
+    }
+</script>
+
+</body>
+</html>
