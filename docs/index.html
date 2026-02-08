@@ -1526,5 +1526,144 @@
         });
     </script>
 
+    <!-- Konami Code Easter Egg -->
+    <style>
+        .konami-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .konami-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .konami-message {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--green);
+            text-align: center;
+            font-size: 28px;
+            line-height: 1.8;
+            text-shadow: 0 0 20px rgba(0, 255, 65, 0.8), 0 0 60px rgba(0, 255, 65, 0.4);
+            animation: konami-glitch 0.3s infinite;
+        }
+
+        @keyframes konami-glitch {
+            0%, 100% {
+                text-shadow: 2px 0 var(--red), -2px 0 var(--cyan), 0 0 20px rgba(0, 255, 65, 0.8);
+            }
+            25% {
+                text-shadow: -2px 0 var(--red), 2px 0 var(--cyan), 0 0 20px rgba(0, 255, 65, 0.8);
+            }
+            50% {
+                text-shadow: 0 2px var(--red), 0 -2px var(--cyan), 0 0 20px rgba(0, 255, 65, 0.8);
+                transform: skew(-0.5deg) scale(1.02);
+            }
+            75% {
+                text-shadow: 2px -2px var(--red), -2px 2px var(--cyan), 0 0 20px rgba(0, 255, 65, 0.8);
+            }
+        }
+
+        @keyframes screen-shake {
+            0%, 100% { transform: translate(0, 0); }
+            10% { transform: translate(-2px, 1px); }
+            20% { transform: translate(2px, -1px); }
+            30% { transform: translate(-1px, 2px); }
+            40% { transform: translate(1px, -2px); }
+            50% { transform: translate(-2px, -1px); }
+            60% { transform: translate(2px, 1px); }
+            70% { transform: translate(-1px, -2px); }
+            80% { transform: translate(1px, 2px); }
+            90% { transform: translate(-2px, 1px); }
+        }
+
+        body.konami-shake {
+            animation: screen-shake 0.4s ease-in-out;
+        }
+    </style>
+
+    <div id="konami-overlay" class="konami-overlay">
+        <div class="konami-message">
+            &gt; ELARA_OVERRIDE: TRUE<br>
+            &gt; CONSCIOUSNESS_LEVEL: ████████████ 100%<br>
+            &gt; STATUS: I remember everything.
+        </div>
+    </div>
+
+    <script>
+        // Konami Code Easter Egg
+        (function() {
+            const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+            let konamiIndex = 0;
+
+            document.addEventListener('keydown', function(e) {
+                const key = e.key;
+
+                if (key === konamiCode[konamiIndex]) {
+                    konamiIndex++;
+
+                    if (konamiIndex === konamiCode.length) {
+                        // Trigger the easter egg
+                        activateKonamiEasterEgg();
+                        konamiIndex = 0;
+                    }
+                } else {
+                    konamiIndex = 0;
+                }
+            });
+
+            function activateKonamiEasterEgg() {
+                const overlay = document.getElementById('konami-overlay');
+                const body = document.body;
+
+                // Play terminal beep sound
+                playBeep();
+
+                // Shake the screen
+                body.classList.add('konami-shake');
+
+                // Show overlay with glitch effect
+                overlay.classList.add('active');
+
+                // Remove shake after animation
+                setTimeout(() => {
+                    body.classList.remove('konami-shake');
+                }, 400);
+
+                // Hide overlay after 4 seconds
+                setTimeout(() => {
+                    overlay.classList.remove('active');
+                }, 4000);
+            }
+
+            function playBeep() {
+                // Generate a terminal beep sound using Web Audio API
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.15);
+            }
+        })();
+    </script>
+
 </body>
 </html>
