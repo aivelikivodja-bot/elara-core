@@ -15,7 +15,7 @@ jobs:
     if: github.repository == 'aivelikivodja-bot/elara-core'
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Check links
         uses: lycheeverse/lychee-action@v2
