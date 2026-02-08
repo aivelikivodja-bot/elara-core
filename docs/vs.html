@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELARA CORE // vs. Alternatives</title>
+    <meta name="description" content="Honest comparison: Elara Core vs mem0, Letta (MemGPT), ChatGPT Memory, and other AI memory solutions.">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --bg-card: #0f0f0f;
+            --green: #00ff41;
+            --green-dim: #00cc33;
+            --green-dark: #003300;
+            --red: #ff0040;
+            --cyan: #00e5ff;
+            --amber: #ffb000;
+            --text: #c0c0c0;
+            --text-dim: #606060;
+            --border: #1a1a1a;
+            --border-green: #003300;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 9999;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            padding: 40px 0 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 50px;
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .header-nav a {
+            font-size: 13px;
+            color: var(--green-dim);
+            text-decoration: none;
+            padding: 6px 14px;
+            border: 1px solid var(--green-dark);
+            transition: all 0.2s;
+        }
+
+        .header-nav a:hover {
+            background: rgba(0, 255, 65, 0.08);
+            border-color: var(--green);
+        }
+
+        .header h1 {
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(13px, 2.5vw, 20px);
+            color: var(--green);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: var(--text-dim);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        /* Competitor Cards */
+        .competitors {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 16px;
+            margin-bottom: 50px;
+        }
+
+        .competitor-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            padding: 20px;
+        }
+
+        .competitor-card h3 {
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            color: var(--amber);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .competitor-card p {
+            font-size: 13px;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+
+        /* Comparison Table */
+        .comparison-section {
+            margin-bottom: 60px;
+        }
+
+        .comparison-section h2 {
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            color: var(--amber);
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .comparison-table {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: rgba(0, 255, 65, 0.04);
+        }
+
+        th {
+            padding: 14px 12px;
+            text-align: left;
+            font-size: 12px;
+            color: var(--green);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+            font-weight: normal;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background: rgba(0, 255, 65, 0.02);
+        }
+
+        .feature-label {
+            color: var(--text);
+            font-weight: 500;
+        }
+
+        .check-green {
+            color: var(--green);
+            font-size: 16px;
+        }
+
+        .check-neutral {
+            color: var(--text-dim);
+            font-size: 16px;
+        }
+
+        .value-highlight {
+            color: var(--cyan);
+        }
+
+        .value-dim {
+            color: var(--text-dim);
+        }
+
+        /* Why Elara section */
+        .why-section {
+            background: var(--bg-card);
+            border: 1px solid var(--border-green);
+            padding: 30px;
+            margin-bottom: 40px;
+        }
+
+        .why-section h2 {
+            font-family: 'VT323', monospace;
+            font-size: 24px;
+            color: var(--green);
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .why-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .why-item h3 {
+            font-size: 14px;
+            color: var(--green-dim);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .why-item p {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Honest section */
+        .honest-section {
+            background: rgba(255, 0, 64, 0.05);
+            border: 1px solid rgba(255, 0, 64, 0.2);
+            padding: 24px;
+            margin-bottom: 40px;
+        }
+
+        .honest-section h2 {
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            color: var(--red);
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+            text-transform: uppercase;
+        }
+
+        .honest-section ul {
+            margin-left: 20px;
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.8;
+        }
+
+        .honest-section li {
+            margin-bottom: 6px;
+        }
+
+        /* Disclaimer */
+        .disclaimer {
+            font-size: 12px;
+            color: var(--text-dim);
+            font-style: italic;
+            padding: 16px;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        /* CTA */
+        .cta {
+            text-align: center;
+            padding: 60px 0;
+            border-top: 1px solid var(--border);
+        }
+
+        .cta h2 {
+            font-family: 'Press Start 2P', monospace;
+            font-size: clamp(12px, 2vw, 18px);
+            color: var(--green);
+            margin-bottom: 16px;
+        }
+
+        .cta .code {
+            background: #050505;
+            border: 1px solid var(--green-dark);
+            padding: 14px 28px;
+            display: inline-block;
+            font-size: 16px;
+            color: var(--green);
+            margin: 16px 0;
+        }
+
+        .cta-links {
+            margin-top: 20px;
+        }
+
+        .cta-links a {
+            display: inline-block;
+            color: var(--green-dim);
+            text-decoration: none;
+            padding: 8px 20px;
+            border: 1px solid var(--green-dark);
+            margin: 4px;
+            font-size: 13px;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .cta-links a:hover {
+            background: rgba(0, 255, 65, 0.08);
+            border-color: var(--green);
+        }
+
+        /* Footer */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 30px 0;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-dim);
+        }
+
+        footer a { color: var(--green-dim); text-decoration: none; }
+        footer a:hover { color: var(--green); }
+
+        @media (max-width: 900px) {
+            .comparison-table {
+                font-size: 12px;
+            }
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="header">
+        <div class="header-nav">
+            <a href="/">&larr; Elara Core</a>
+            <a href="/tools.html">TOOLS</a>
+            <a href="/architecture.html">ARCH</a>
+            <a href="/quickstart.html">START</a>
+            <a href="/configure.html">CONFIGURE</a>
+            <a href="/personas.html">PERSONAS</a>
+            <a href="/compare.html">BEFORE/AFTER</a>
+            <a href="/faq.html">FAQ</a>
+            <a href="/roadmap.html">ROADMAP</a>
+            <a href="/changelog.html">CHANGELOG</a>
+            <a href="/status.html">STATUS</a>
+            <a href="/search.html">&#128269;</a>
+        </div>
+        <h1>// VS. ALTERNATIVES</h1>
+        <p>Honest comparison. No marketing fluff.</p>
+        <p style="color: var(--text-dim); font-size: 12px;">Updated February 2026</p>
+    </div>
+
+    <!-- Who We're Comparing -->
+    <div class="competitors">
+        <div class="competitor-card">
+            <h3>Elara Core</h3>
+            <p>Local-first MCP memory server with mood, episodes, corrections, and reasoning trails. What you're looking at right now.</p>
+        </div>
+        <div class="competitor-card">
+            <h3>mem0</h3>
+            <p>AI memory layer with cloud/local options. Focuses on cross-platform integration and multi-user memory graphs.</p>
+        </div>
+        <div class="competitor-card">
+            <h3>Letta (MemGPT)</h3>
+            <p>Research-based long-term memory system. Inspired by OS memory management. Cloud/local deployment.</p>
+        </div>
+        <div class="competitor-card">
+            <h3>ChatGPT Memory</h3>
+            <p>Built-in memory feature for ChatGPT Plus users. Automatically learns from conversations. Cloud-only.</p>
+        </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="comparison-section">
+        <h2>Feature Comparison</h2>
+        <div class="comparison-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Feature</th>
+                        <th>Elara Core</th>
+                        <th>mem0</th>
+                        <th>Letta</th>
+                        <th>ChatGPT Memory</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="feature-label">Local/Cloud</td>
+                        <td><span class="check-green">✓</span> <span class="value-highlight">100% Local</span></td>
+                        <td><span class="check-neutral">●</span> Cloud + Local</td>
+                        <td><span class="check-neutral">●</span> Cloud + Local</td>
+                        <td><span class="value-dim">Cloud only</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">MCP Native</td>
+                        <td><span class="check-green">✓</span> <span class="value-highlight">34 tools</span></td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Mood System</td>
+                        <td><span class="check-green">✓</span> <span class="value-highlight">Valence/Energy/Openness</span></td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Episodic Memory</td>
+                        <td><span class="check-green">✓</span> Session tracking + milestones</td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="check-neutral">●</span> Basic</td>
+                        <td><span class="value-dim">No</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Dream Processing</td>
+                        <td><span class="check-green">✓</span> Weekly/Monthly synthesis</td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Corrections</td>
+                        <td><span class="check-green">✓</span> <span class="value-highlight">Persistent mistake tracking</span></td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Reasoning Trails</td>
+                        <td><span class="check-green">✓</span> Hypothesis + evidence chains</td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Goal Tracking</td>
+                        <td><span class="check-green">✓</span> Active/stalled/completed</td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Semantic Search</td>
+                        <td><span class="check-neutral">●</span> ChromaDB (cosine)</td>
+                        <td><span class="check-neutral">●</span> Qdrant/Pinecone/etc</td>
+                        <td><span class="check-neutral">●</span> Letta DB</td>
+                        <td><span class="check-neutral">●</span> Proprietary</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Privacy</td>
+                        <td><span class="check-green">✓</span> <span class="value-highlight">Zero telemetry</span></td>
+                        <td><span class="check-neutral">●</span> Depends on config</td>
+                        <td><span class="check-neutral">●</span> Depends on deployment</td>
+                        <td><span class="value-dim">OpenAI sees all</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Price</td>
+                        <td><span class="check-green">✓</span> <span class="value-highlight">Free (open source)</span></td>
+                        <td><span class="check-neutral">●</span> Freemium</td>
+                        <td><span class="check-neutral">●</span> Free/Paid tiers</td>
+                        <td><span class="check-neutral">●</span> ChatGPT Plus ($20/mo)</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Customizable</td>
+                        <td><span class="check-green">✓</span> Full source access</td>
+                        <td><span class="check-neutral">●</span> API only</td>
+                        <td><span class="check-green">✓</span> Open source</td>
+                        <td><span class="value-dim">No</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Setup Time</td>
+                        <td><span class="check-green">✓</span> <span class="value-highlight">&lt;2 minutes</span></td>
+                        <td><span class="check-neutral">●</span> 5-10 minutes</td>
+                        <td><span class="check-neutral">●</span> 10-20 minutes</td>
+                        <td><span class="check-green">✓</span> 0 (built-in)</td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Memory Limit</td>
+                        <td><span class="check-green">✓</span> <span class="value-highlight">Unlimited (local disk)</span></td>
+                        <td><span class="check-neutral">●</span> Tier-based</td>
+                        <td><span class="check-neutral">●</span> Varies by plan</td>
+                        <td><span class="value-dim">~300 items max</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Business Intelligence</td>
+                        <td><span class="check-green">✓</span> Idea scoring + competitors</td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                    </tr>
+                    <tr>
+                        <td class="feature-label">Email Integration</td>
+                        <td><span class="check-green">✓</span> Gmail via OAuth2</td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                        <td><span class="value-dim">No</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Why Elara -->
+    <div class="why-section">
+        <h2>Why Elara Core?</h2>
+        <div class="why-grid">
+            <div class="why-item">
+                <h3>Privacy First</h3>
+                <p>Everything stays on your machine. No API calls, no telemetry, no cloud dependencies. Your conversations, your data, your control.</p>
+            </div>
+            <div class="why-item">
+                <h3>Built for MCP</h3>
+                <p>Not a retrofit. Designed from the ground up as an MCP server with 34 tools for semantic memory, mood tracking, reasoning, and more.</p>
+            </div>
+            <div class="why-item">
+                <h3>Beyond Simple Recall</h3>
+                <p>Mood-aware responses, mistake tracking, reasoning trails, episodic memory, dream synthesis. It's not just memory—it's continuity.</p>
+            </div>
+            <div class="why-item">
+                <h3>Free Forever</h3>
+                <p>BSD-1-Clause license. No usage limits, no paid tiers, no per-token pricing. Run it on your hardware, modify it however you want.</p>
+            </div>
+            <div class="why-item">
+                <h3>Instant Setup</h3>
+                <p>pip install elara-core, add to Claude Desktop config, restart. No accounts, no API keys (except optional Gmail), no configuration hell.</p>
+            </div>
+            <div class="why-item">
+                <h3>Developer-Friendly</h3>
+                <p>Clean Python codebase, 90 tests, documented architecture. Want a custom tool? Add it. Want different embeddings? Swap them. It's your server.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Honest Weaknesses -->
+    <div class="honest-section">
+        <h2>Where Elara Falls Short</h2>
+        <ul>
+            <li><strong>Solo developer project.</strong> Not backed by a company or VC funding. Updates depend on one person's time.</li>
+            <li><strong>Smaller community.</strong> mem0 and Letta have more users, more tutorials, more third-party integrations.</li>
+            <li><strong>Newer codebase.</strong> Less battle-tested than alternatives. Bugs will surface.</li>
+            <li><strong>No multi-user support.</strong> Built for single-user workflows. No memory sharing across teams (yet).</li>
+            <li><strong>Python only.</strong> If you need JavaScript/TypeScript integration, mem0's API might be easier.</li>
+            <li><strong>ChromaDB dependency.</strong> Requires running a local vector DB. Some alternatives offer hosted solutions.</li>
+            <li><strong>MCP-specific.</strong> If you're not using Claude or an MCP-compatible client, this won't help you.</li>
+        </ul>
+    </div>
+
+    <!-- Disclaimer -->
+    <div class="disclaimer">
+        <p><strong>Disclaimer:</strong> Comparisons based on publicly available information as of February 2026. Features and capabilities may have changed. Check each project's documentation for current details. We're not affiliated with mem0, Letta, or OpenAI.</p>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta">
+        <h2>Try It Yourself</h2>
+        <div class="code">pip install elara-core</div>
+        <div class="cta-links">
+            <a href="/quickstart.html">Quickstart</a>
+            <a href="/tools.html">34 Tools</a>
+            <a href="/compare.html">Before/After</a>
+            <a href="https://github.com/aivelikivodja-bot/elara-core" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href="https://pypi.org/project/elara-core/" target="_blank" rel="noopener noreferrer">PyPI</a>
+        </div>
+    </div>
+
+</div>
+
+<footer>
+    <div class="container">
+        <p><a href="/">Elara Core</a> &mdash; <a href="https://navigatorbuilds.com" rel="noopener noreferrer">Navigator Builds</a> &mdash; <a href="https://github.com/aivelikivodja-bot/elara-core" target="_blank" rel="noopener noreferrer">GitHub</a></p>
+    </div>
+</footer>
+
+</body>
+</html>

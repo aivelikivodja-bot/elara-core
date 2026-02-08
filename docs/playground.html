@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ELARA CORE // Interactive Playground</title>
+    <meta name="description" content="Try Elara Core tools in an interactive terminal. No installation required — explore memory, mood, episodes, and dreams.">
+    <meta property="og:title" content="Elara Core — Interactive Playground">
+    <meta property="og:description" content="Try 34 MCP tools in a simulated terminal. No backend, no install.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://elara.navigatorbuilds.com/playground.html">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@NavigatorBuilds">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Share+Tech+Mono&family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0a0a0a;
+            --bg-card: #0f0f0f;
+            --bg-terminal: #050505;
+            --green: #00ff41;
+            --green-dim: #00cc33;
+            --green-dark: #003300;
+            --red: #ff0040;
+            --cyan: #00e5ff;
+            --amber: #ffb000;
+            --text: #c0c0c0;
+            --text-dim: #606060;
+            --text-bright: #e0e0e0;
+            --border: #1a1a1a;
+            --border-green: #003300;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.7;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        /* CRT Scanlines */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 9999;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
+        }
+
+        /* Vignette */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            pointer-events: none;
+            z-index: 9998;
+            background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.35) 100%);
+        }
+
+        /* Scanline sweep */
+        .scanline-sweep {
+            position: fixed;
+            top: -4px;
+            left: 0; right: 0;
+            height: 4px;
+            background: linear-gradient(180deg, transparent, rgba(0,255,65,0.12), transparent);
+            z-index: 9997;
+            pointer-events: none;
+            animation: scanline-pass 4s linear infinite;
+        }
+
+        @keyframes scanline-pass {
+            0%   { top: -4px; }
+            100% { top: 100%; }
+        }
+
+        @keyframes flicker {
+            0%   { opacity: 1; }
+            3%   { opacity: 0.96; }
+            6%   { opacity: 1; }
+            50%  { opacity: 1; }
+            51%  { opacity: 0.93; }
+            52%  { opacity: 1; }
+            89%  { opacity: 1; }
+            90%  { opacity: 0.97; }
+            91%  { opacity: 1; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(0,255,65,0.2); }
+            50% { box-shadow: 0 0 20px rgba(0,255,65,0.4), 0 0 40px rgba(0,255,65,0.1); }
+        }
+
+        @keyframes glitch-in {
+            0%   { text-shadow: 2px 0 var(--red), -2px 0 var(--cyan); transform: skew(-1deg); }
+            20%  { text-shadow: -2px 0 var(--red), 2px 0 var(--cyan); transform: skew(0.5deg); }
+            40%  { text-shadow: 1px 1px var(--red), -1px -1px var(--cyan); transform: skew(-0.3deg); }
+            60%  { text-shadow: -1px 0 var(--red), 1px 0 var(--cyan); transform: skew(0.1deg); }
+            80%  { text-shadow: 0 0 var(--red), 0 0 var(--cyan); transform: skew(0deg); }
+            100% { text-shadow: none; transform: skew(0deg); }
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 0 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            padding: 40px 0 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+
+        .header-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .header-nav a {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 13px;
+            color: var(--green-dim);
+            text-decoration: none;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+        }
+
+        .header-nav a:hover {
+            color: var(--green);
+            text-shadow: 0 0 8px rgba(0,255,65,0.4);
+        }
+
+        .header-nav .logo {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            color: var(--green);
+            text-shadow: 0 0 15px rgba(0,255,65,0.5);
+        }
+
+        .header-nav .logo .red { color: var(--red); text-shadow: 0 0 10px rgba(255,0,64,0.5); }
+
+        h1 {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 18px;
+            color: var(--green);
+            text-shadow: 0 0 20px rgba(0,255,65,0.4);
+            margin-bottom: 12px;
+            animation: glitch-in 0.5s ease-out;
+        }
+
+        .subtitle {
+            color: var(--text-dim);
+            font-size: 13px;
+            letter-spacing: 1px;
+        }
+
+        .subtitle .green { color: var(--green-dim); }
+
+        /* Terminal container */
+        .terminal-frame {
+            background: var(--bg-terminal);
+            border: 1px solid var(--border-green);
+            border-radius: 4px;
+            margin-bottom: 30px;
+            animation: flicker 6s infinite;
+            box-shadow:
+                0 0 30px rgba(0,255,65,0.05),
+                inset 0 0 60px rgba(0,0,0,0.4);
+        }
+
+        .terminal-titlebar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: #0a0a0a;
+            border-bottom: 1px solid var(--border);
+            border-radius: 4px 4px 0 0;
+        }
+
+        .terminal-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--text-dim);
+        }
+
+        .terminal-dot.r { background: var(--red); box-shadow: 0 0 6px rgba(255,0,64,0.5); }
+        .terminal-dot.y { background: var(--amber); box-shadow: 0 0 6px rgba(255,176,0,0.5); }
+        .terminal-dot.g { background: var(--green); box-shadow: 0 0 6px rgba(0,255,65,0.5); }
+
+        .terminal-title {
+            flex: 1;
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-dim);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .terminal-body {
+            padding: 20px;
+            min-height: 420px;
+            max-height: 70vh;
+            overflow-y: auto;
+            scroll-behavior: smooth;
+        }
+
+        /* Scrollbar */
+        .terminal-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .terminal-body::-webkit-scrollbar-track {
+            background: var(--bg-terminal);
+        }
+        .terminal-body::-webkit-scrollbar-thumb {
+            background: var(--green-dark);
+            border-radius: 3px;
+        }
+        .terminal-body::-webkit-scrollbar-thumb:hover {
+            background: var(--green-dim);
+        }
+
+        /* Output lines */
+        .output-line {
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            min-height: 1.6em;
+        }
+
+        .output-line.welcome { color: var(--text-dim); }
+        .output-line.cmd-echo { color: var(--text-bright); }
+        .output-line.response { color: var(--green-dim); }
+        .output-line.error { color: var(--red); }
+        .output-line.suggestion { color: var(--amber); }
+
+        /* Colored spans in output */
+        .c-green { color: var(--green); }
+        .c-green-dim { color: var(--green-dim); }
+        .c-red { color: var(--red); }
+        .c-cyan { color: var(--cyan); }
+        .c-amber { color: var(--amber); }
+        .c-dim { color: var(--text-dim); }
+        .c-text { color: var(--text); }
+        .c-bright { color: var(--text-bright); }
+
+        /* Input line */
+        .input-row {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-top: 2px;
+        }
+
+        .prompt-char {
+            color: var(--green);
+            margin-right: 8px;
+            font-weight: bold;
+            text-shadow: 0 0 8px rgba(0,255,65,0.5);
+            flex-shrink: 0;
+        }
+
+        .input-field {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-bright);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 14px;
+            caret-color: var(--green);
+        }
+
+        .input-field::placeholder {
+            color: var(--text-dim);
+            opacity: 0.5;
+        }
+
+        /* Blinking cursor next to prompt when idle */
+        .cursor-blink {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: var(--green);
+            animation: blink 0.7s step-end infinite;
+            vertical-align: text-bottom;
+            margin-left: 1px;
+        }
+
+        /* Quick commands bar */
+        .quick-cmds {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            background: #080808;
+            border-radius: 0 0 4px 4px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .quick-cmd {
+            display: inline-block;
+            padding: 4px 10px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border-radius: 2px;
+        }
+
+        .quick-cmd:hover {
+            border-color: var(--green-dark);
+            color: var(--green-dim);
+            background: rgba(0,255,65,0.03);
+        }
+
+        .quick-cmd:active {
+            background: rgba(0,255,65,0.08);
+            color: var(--green);
+        }
+
+        /* Info section below terminal */
+        .info-section {
+            margin-bottom: 40px;
+        }
+
+        .info-section h2 {
+            font-family: 'VT323', monospace;
+            font-size: 22px;
+            color: var(--green);
+            margin-bottom: 12px;
+            text-shadow: 0 0 10px rgba(0,255,65,0.3);
+        }
+
+        .info-section p {
+            color: var(--text-dim);
+            font-size: 13px;
+            margin-bottom: 8px;
+            line-height: 1.7;
+        }
+
+        .info-section code {
+            color: var(--amber);
+            background: rgba(255,176,0,0.05);
+            padding: 1px 5px;
+            border-radius: 2px;
+        }
+
+        .cmd-list {
+            list-style: none;
+            margin-top: 12px;
+        }
+
+        .cmd-list li {
+            padding: 6px 0;
+            border-bottom: 1px solid #111;
+            font-size: 13px;
+        }
+
+        .cmd-list li:last-child { border-bottom: none; }
+
+        .cmd-list .cmd-name {
+            color: var(--amber);
+            display: inline-block;
+            min-width: 340px;
+        }
+
+        .cmd-list .cmd-desc {
+            color: var(--text-dim);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 30px 0;
+            border-top: 1px solid var(--border);
+            text-align: center;
+            color: var(--text-dim);
+            font-size: 12px;
+        }
+
+        .footer a {
+            color: var(--green-dim);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            color: var(--green);
+            text-shadow: 0 0 8px rgba(0,255,65,0.4);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 { font-size: 13px; }
+            .terminal-body { min-height: 300px; max-height: 60vh; padding: 14px; }
+            .output-line, .input-field, .prompt-char { font-size: 12px; }
+            .cmd-list .cmd-name { min-width: auto; display: block; }
+            .quick-cmds { gap: 4px; }
+            .quick-cmd { font-size: 10px; padding: 3px 7px; }
+        }
+
+        @media (max-width: 480px) {
+            .output-line, .input-field, .prompt-char { font-size: 11px; }
+            .terminal-body { min-height: 260px; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="scanline-sweep"></div>
+
+    <div class="container">
+
+        <!-- Header -->
+        <div class="header">
+            <div class="header-nav">
+                <a href="/" class="logo">ELARA<span class="red">/</span>CORE</a>
+                <div>
+                    <a href="/">HOME</a> &nbsp;|&nbsp;
+                    <a href="/tools.html">TOOLS</a> &nbsp;|&nbsp;
+                    <a href="/quickstart.html">START</a> &nbsp;|&nbsp;
+                    <a href="https://github.com/aivelikivodja-bot/elara-core" target="_blank" rel="noopener">SRC</a>
+                </div>
+            </div>
+            <h1>> PLAYGROUND</h1>
+            <p class="subtitle">Interactive terminal simulation &mdash; <span class="green">no install required</span></p>
+        </div>
+
+        <!-- Terminal -->
+        <div class="terminal-frame">
+            <div class="terminal-titlebar">
+                <div class="terminal-dot r"></div>
+                <div class="terminal-dot y"></div>
+                <div class="terminal-dot g"></div>
+                <div class="terminal-title">elara-playground // simulation</div>
+            </div>
+            <div class="terminal-body" id="terminalBody">
+                <!-- Output lines rendered here by JS -->
+                <div class="input-row" id="inputRow">
+                    <span class="prompt-char">></span>
+                    <input type="text" class="input-field" id="inputField" autocomplete="off" spellcheck="false" placeholder="type a command...">
+                </div>
+            </div>
+            <div class="quick-cmds" id="quickCmds">
+                <button class="quick-cmd" data-cmd="help">help</button>
+                <button class="quick-cmd" data-cmd='elara_recall("dark theme")'>recall</button>
+                <button class="quick-cmd" data-cmd="elara_mood()">mood</button>
+                <button class="quick-cmd" data-cmd='elara_mood_adjust(valence=0.1, reason="shipped something cool")'>mood_adjust</button>
+                <button class="quick-cmd" data-cmd='elara_remember("this playground is cool")'>remember</button>
+                <button class="quick-cmd" data-cmd='elara_episode_start(session_type="work")'>episode</button>
+                <button class="quick-cmd" data-cmd='elara_correction(action="check", task="writing a Firestore query")'>correction</button>
+                <button class="quick-cmd" data-cmd='elara_dream(dream_type="weekly")'>dream</button>
+                <button class="quick-cmd" data-cmd="elara_status()">status</button>
+                <button class="quick-cmd" data-cmd="clear">clear</button>
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="info-section">
+            <h2>// ABOUT THIS PLAYGROUND</h2>
+            <p>This is a <strong style="color:var(--text-bright)">client-side simulation</strong> of the Elara Core MCP server. No data leaves your browser. No backend. All responses are pre-scripted to demonstrate what the real tools return.</p>
+            <p>The real Elara Core runs as a local MCP server with <code>34 tools</code>, ChromaDB semantic search, mood tracking, episodic memory, dreams, and more.</p>
+
+            <h2 style="margin-top:30px">// AVAILABLE COMMANDS</h2>
+            <ul class="cmd-list">
+                <li><span class="cmd-name">help</span> <span class="cmd-desc">List available commands</span></li>
+                <li><span class="cmd-name">elara_recall("dark theme")</span> <span class="cmd-desc">Semantic memory search</span></li>
+                <li><span class="cmd-name">elara_mood()</span> <span class="cmd-desc">Check current mood state</span></li>
+                <li><span class="cmd-name">elara_mood_adjust(valence=0.1, reason="...")</span> <span class="cmd-desc">Shift mood</span></li>
+                <li><span class="cmd-name">elara_remember("...")</span> <span class="cmd-desc">Save a memory</span></li>
+                <li><span class="cmd-name">elara_episode_start(session_type="work")</span> <span class="cmd-desc">Start an episode</span></li>
+                <li><span class="cmd-name">elara_correction(action="check", task="...")</span> <span class="cmd-desc">Check corrections</span></li>
+                <li><span class="cmd-name">elara_dream(dream_type="weekly")</span> <span class="cmd-desc">Run dream mode</span></li>
+                <li><span class="cmd-name">elara_status()</span> <span class="cmd-desc">Full system status</span></li>
+                <li><span class="cmd-name">clear</span> <span class="cmd-desc">Clear terminal</span></li>
+            </ul>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <a href="/">ELARA CORE</a> &mdash; Persistent memory for AI &mdash;
+            <a href="https://github.com/aivelikivodja-bot/elara-core" target="_blank" rel="noopener">GitHub</a>
+        </div>
+
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // ─── DOM ───
+        const body = document.getElementById('terminalBody');
+        const inputRow = document.getElementById('inputRow');
+        const inputField = document.getElementById('inputField');
+        const quickCmds = document.getElementById('quickCmds');
+
+        // ─── State ───
+        const history = [];
+        let historyIndex = -1;
+        let isTyping = false;
+
+        // ─── Scripted Responses ───
+        // Each key is a regex pattern, value is the response (array of lines, each with optional style)
+        const commands = [
+            {
+                pattern: /^help$/i,
+                response: [
+                    { text: '', style: '' },
+                    { text: '  ELARA CORE PLAYGROUND — Available Commands', style: 'c-green' },
+                    { text: '  ═══════════════════════════════════════════', style: 'c-green-dim' },
+                    { text: '', style: '' },
+                    { text: '  elara_recall("query")              Search memories by meaning', style: 'c-text' },
+                    { text: '  elara_mood()                       Check current mood state', style: 'c-text' },
+                    { text: '  elara_mood_adjust(valence, reason)  Shift mood with reason', style: 'c-text' },
+                    { text: '  elara_remember("text")             Save a memory', style: 'c-text' },
+                    { text: '  elara_episode_start(session_type)   Start episode tracking', style: 'c-text' },
+                    { text: '  elara_correction(action, task)      Check past mistakes', style: 'c-text' },
+                    { text: '  elara_dream(dream_type)             Run dream analysis', style: 'c-text' },
+                    { text: '  elara_status()                      Full system status', style: 'c-text' },
+                    { text: '  clear                               Clear terminal', style: 'c-text' },
+                    { text: '', style: '' },
+                    { text: '  This is a simulation. The real Elara has 34 tools.', style: 'c-dim' },
+                    { text: '  Install: pip install elara-core', style: 'c-dim' },
+                    { text: '', style: '' },
+                ]
+            },
+            {
+                pattern: /^elara_recall\s*\(/i,
+                response: [
+                    { text: '', style: '' },
+                    { text: 'Found 3 memories (relevance > 0.7):', style: 'c-green-dim' },
+                    { text: '', style: '' },
+                    { text: '  [0.94] User prefers dark themes across all apps', style: 'c-green' },
+                    { text: '         2026-01-15 | type: preference', style: 'c-dim' },
+                    { text: '', style: '' },
+                    { text: '  [0.88] HandyBill dark theme completed, 17 files', style: 'c-green' },
+                    { text: '         2026-01-20 | type: milestone', style: 'c-dim' },
+                    { text: '', style: '' },
+                    { text: '  [0.71] PlanPulse should match HandyBill dark aesthetic', style: 'c-green-dim' },
+                    { text: '         2026-01-22 | type: decision', style: 'c-dim' },
+                    { text: '', style: '' },
+                ]
+            },
+            {
+                pattern: /^elara_mood\s*\(\s*\)\s*$/i,
+                response: [
+                    { text: '', style: '' },
+                    { text: 'Mood: warm-focused', style: 'c-green' },
+                    { text: 'Valence: 0.65 | Energy: 0.7 | Openness: 0.5', style: 'c-text' },
+                    { text: 'Primary: engaged | Secondary: curious', style: 'c-amber' },
+                    { text: '', style: '' },
+                ]
+            },
+            {
+                pattern: /^elara_mood_adjust\s*\(/i,
+                response: [
+                    { text: '', style: '' },
+                    { text: 'Mood shifted: warm-focused \u2192 warm-energized', style: 'c-green' },
+                    { text: 'Valence: 0.65 \u2192 0.75 | Energy: 0.7 \u2192 0.75', style: 'c-text' },
+                    { text: 'Reason: shipped something cool', style: 'c-amber' },
+                    { text: '', style: '' },
+                ]
+            },
+            {
+                pattern: /^elara_remember\s*\(/i,
+                response: [
+                    { text: '', style: '' },
+                    { text: 'Remembered. Memory ID: mem_a7f3k2', style: 'c-green' },
+                    { text: 'Type: conversation | Importance: 0.5', style: 'c-text' },
+                    { text: 'Indexed in ChromaDB (collection: memories, 71 items)', style: 'c-dim' },
+                    { text: '', style: '' },
+                ]
+            },
+            {
+                pattern: /^elara_episode_start\s*\(/i,
+                response: [
+                    { text: '', style: '' },
+                    { text: 'Episode started: ep_2026-02-08_001', style: 'c-green' },
+                    { text: 'Type: work | Started: 22:45 UTC', style: 'c-text' },
+                    { text: 'Tracking milestones, decisions, insights.', style: 'c-dim' },
+                    { text: '', style: '' },
+                ]
+            },
+            {
+                pattern: /^elara_correction\s*\(/i,
+                response: [
+                    { text: '', style: '' },
+                    { text: 'Found 1 relevant correction (relevance: 0.91):', style: 'c-green-dim' },
+                    { text: '', style: '' },
+                    { text: '  \u274c Mistake: Used .toList() on Firestore query results', style: 'c-red' },
+                    { text: '  \u2705 Correction: Use .get() \u2014 toList() triggers full collection read', style: 'c-green' },
+                    { text: '  Context: HandyBill expense loading \u2014 2026-01-18', style: 'c-dim' },
+                    { text: '', style: '' },
+                ]
+            },
+            {
+                pattern: /^elara_dream\s*\(/i,
+                response: [
+                    { text: '', style: '' },
+                    { text: '\ud83c\udf19 Processing weekly dream...', style: 'c-cyan' },
+                    { text: '', style: '' },
+                    { text: 'Project momentum:', style: 'c-text' },
+                    { text: '  elara-core: HIGH (12 commits, 3 milestones)', style: 'c-green' },
+                    { text: '  handybill:  LOW  (0 commits, stalled)', style: 'c-amber' },
+                    { text: '', style: '' },
+                    { text: 'Mood trend: gradually warming (+0.15 over 7 days)', style: 'c-green-dim' },
+                    { text: 'Recurring theme: documentation and polish phase', style: 'c-dim' },
+                    { text: '', style: '' },
+                    { text: 'Dream complete. Report saved.', style: 'c-green' },
+                    { text: '', style: '' },
+                ]
+            },
+            {
+                pattern: /^elara_status\s*\(\s*\)\s*$/i,
+                response: [
+                    { text: '', style: '' },
+                    { text: '  \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557', style: 'c-green-dim' },
+                    { text: '  \u2551      ELARA CORE v0.9.1            \u2551', style: 'c-green' },
+                    { text: '  \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d', style: 'c-green-dim' },
+                    { text: '', style: '' },
+                    { text: '  Mood:          warm-energized', style: 'c-green' },
+                    { text: '  Mode:          dev', style: 'c-text' },
+                    { text: '  Memories:      71', style: 'c-text' },
+                    { text: '  Conversations: 1,080', style: 'c-text' },
+                    { text: '  Active episode: ep_2026-02-08_001', style: 'c-amber' },
+                    { text: '  Goals:         3 active, 1 stalled', style: 'c-text' },
+                    { text: '  Corrections:   3 loaded', style: 'c-text' },
+                    { text: '  Overwatch:     ACTIVE', style: 'c-red' },
+                    { text: '', style: '' },
+                ]
+            },
+        ];
+
+        // ─── Fuzzy matching data ───
+        const knownCommands = [
+            'help',
+            'elara_recall("dark theme")',
+            'elara_mood()',
+            'elara_mood_adjust(valence=0.1, reason="shipped something cool")',
+            'elara_remember("this playground is cool")',
+            'elara_episode_start(session_type="work")',
+            'elara_correction(action="check", task="writing a Firestore query")',
+            'elara_dream(dream_type="weekly")',
+            'elara_status()',
+            'clear',
+        ];
+
+        // Simple fuzzy: extract the base function name and compare
+        function extractBase(cmd) {
+            const m = cmd.match(/^(\w+)/);
+            return m ? m[1].toLowerCase() : '';
+        }
+
+        function levenshtein(a, b) {
+            const m = a.length, n = b.length;
+            const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+            for (let i = 0; i <= m; i++) dp[i][0] = i;
+            for (let j = 0; j <= n; j++) dp[0][j] = j;
+            for (let i = 1; i <= m; i++) {
+                for (let j = 1; j <= n; j++) {
+                    dp[i][j] = Math.min(
+                        dp[i-1][j] + 1,
+                        dp[i][j-1] + 1,
+                        dp[i-1][j-1] + (a[i-1] !== b[j-1] ? 1 : 0)
+                    );
+                }
+            }
+            return dp[m][n];
+        }
+
+        function findClosest(input) {
+            const inputBase = extractBase(input);
+            if (!inputBase) return null;
+
+            let bestMatch = null;
+            let bestDist = Infinity;
+
+            for (const cmd of knownCommands) {
+                const cmdBase = extractBase(cmd);
+                const dist = levenshtein(inputBase, cmdBase);
+                if (dist < bestDist && dist <= 4) {
+                    bestDist = dist;
+                    bestMatch = cmd;
+                }
+            }
+
+            // Also check if input contains a known base as substring
+            if (!bestMatch || bestDist > 2) {
+                for (const cmd of knownCommands) {
+                    const cmdBase = extractBase(cmd);
+                    if (inputBase.includes(cmdBase) || cmdBase.includes(inputBase)) {
+                        return cmd;
+                    }
+                }
+            }
+
+            return bestDist > 0 ? bestMatch : null;
+        }
+
+        // ─── Render helpers ───
+
+        function addOutputLine(text, className) {
+            const div = document.createElement('div');
+            div.className = 'output-line';
+            if (className) {
+                // If className starts with 'c-' it's a color class for the span approach
+                const span = document.createElement('span');
+                span.className = className;
+                span.textContent = text;
+                div.appendChild(span);
+            } else {
+                div.textContent = text;
+            }
+            body.insertBefore(div, inputRow);
+            return div;
+        }
+
+        function addHTMLLine(html) {
+            const div = document.createElement('div');
+            div.className = 'output-line';
+            div.innerHTML = html;
+            body.insertBefore(div, inputRow);
+            return div;
+        }
+
+        function scrollToBottom() {
+            body.scrollTop = body.scrollHeight;
+        }
+
+        // ─── Typing animation ───
+        function typeResponse(lines) {
+            return new Promise(async (resolve) => {
+                isTyping = true;
+
+                for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    const div = document.createElement('div');
+                    div.className = 'output-line';
+                    body.insertBefore(div, inputRow);
+
+                    if (!line.text) {
+                        // Empty line
+                        div.innerHTML = '&nbsp;';
+                        await sleep(30);
+                        scrollToBottom();
+                        continue;
+                    }
+
+                    const span = document.createElement('span');
+                    span.className = line.style || '';
+                    div.appendChild(span);
+
+                    // Type character by character
+                    const text = line.text;
+                    for (let c = 0; c < text.length; c++) {
+                        span.textContent = text.substring(0, c + 1);
+                        scrollToBottom();
+
+                        // Speed varies: faster for spaces and repeated chars
+                        let delay;
+                        if (text[c] === ' ') {
+                            delay = 4;
+                        } else if (text[c] === text[c - 1]) {
+                            delay = 6;
+                        } else {
+                            delay = 8 + Math.random() * 12;
+                        }
+                        await sleep(delay);
+                    }
+
+                    await sleep(20);
+                }
+
+                isTyping = false;
+                resolve();
+            });
+        }
+
+        function sleep(ms) {
+            return new Promise(r => setTimeout(r, ms));
+        }
+
+        // ─── Process command ───
+        async function processCommand(raw) {
+            const cmd = raw.trim();
+            if (!cmd) return;
+
+            // Add to history
+            history.push(cmd);
+            historyIndex = history.length;
+
+            // Echo command
+            addHTMLLine('<span class="c-green" style="font-weight:bold">></span> <span class="c-bright">' + escapeHTML(cmd) + '</span>');
+
+            // Handle clear
+            if (cmd.toLowerCase() === 'clear') {
+                // Remove all output lines except input row
+                const lines = body.querySelectorAll('.output-line');
+                lines.forEach(l => l.remove());
+                scrollToBottom();
+                return;
+            }
+
+            // Find matching command
+            let matched = null;
+            for (const entry of commands) {
+                if (entry.pattern.test(cmd)) {
+                    matched = entry;
+                    break;
+                }
+            }
+
+            if (matched) {
+                // Small delay before response, like processing
+                await sleep(150 + Math.random() * 200);
+                await typeResponse(matched.response);
+            } else {
+                // Unknown command — try fuzzy match
+                await sleep(100);
+                const suggestion = findClosest(cmd);
+                await typeResponse([
+                    { text: '', style: '' },
+                    { text: 'Unknown command: ' + cmd, style: 'c-red' },
+                ]);
+
+                if (suggestion) {
+                    await typeResponse([
+                        { text: 'Did you mean: ' + suggestion, style: 'c-amber' },
+                        { text: 'Type "help" for available commands.', style: 'c-dim' },
+                        { text: '', style: '' },
+                    ]);
+                } else {
+                    await typeResponse([
+                        { text: 'Type "help" for available commands.', style: 'c-dim' },
+                        { text: '', style: '' },
+                    ]);
+                }
+            }
+
+            scrollToBottom();
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // ─── Welcome message ───
+        async function showWelcome() {
+            await sleep(300);
+            await typeResponse([
+                { text: '  \u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557', style: 'c-green-dim' },
+                { text: '  \u2551     E L A R A   P L A Y G R O U N D       \u2551', style: 'c-green' },
+                { text: '  \u2551     Try the tools. No install needed.      \u2551', style: 'c-dim' },
+                { text: '  \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d', style: 'c-green-dim' },
+                { text: '', style: '' },
+                { text: '  This is a client-side simulation of Elara Core.', style: 'c-dim' },
+                { text: '  All responses are pre-scripted. Nothing leaves your browser.', style: 'c-dim' },
+                { text: '', style: '' },
+                { text: '  Type "help" to see available commands, or click', style: 'c-dim' },
+                { text: '  the buttons below the terminal to try them out.', style: 'c-dim' },
+                { text: '', style: '' },
+                { text: '  Ready. 34 tools across 11 modules.', style: 'c-green' },
+                { text: '', style: '' },
+            ]);
+
+            inputField.focus();
+        }
+
+        // ─── Event handlers ───
+
+        // Input submission
+        inputField.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (isTyping) return;
+
+                const val = inputField.value;
+                inputField.value = '';
+                processCommand(val);
+            }
+
+            // History navigation
+            if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                if (history.length === 0) return;
+                if (historyIndex > 0) historyIndex--;
+                inputField.value = history[historyIndex] || '';
+                // Move cursor to end
+                setTimeout(() => inputField.setSelectionRange(inputField.value.length, inputField.value.length), 0);
+            }
+
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                if (historyIndex < history.length - 1) {
+                    historyIndex++;
+                    inputField.value = history[historyIndex] || '';
+                } else {
+                    historyIndex = history.length;
+                    inputField.value = '';
+                }
+                setTimeout(() => inputField.setSelectionRange(inputField.value.length, inputField.value.length), 0);
+            }
+        });
+
+        // Quick command buttons
+        quickCmds.addEventListener('click', function(e) {
+            const btn = e.target.closest('.quick-cmd');
+            if (!btn || isTyping) return;
+
+            const cmd = btn.getAttribute('data-cmd');
+            inputField.value = '';
+            processCommand(cmd);
+        });
+
+        // Click anywhere in terminal body focuses input
+        body.addEventListener('click', function(e) {
+            if (e.target === body || e.target.classList.contains('output-line')) {
+                inputField.focus();
+            }
+        });
+
+        // ─── Init ───
+        showWelcome();
+
+    })();
+    </script>
+
+</body>
+</html>
