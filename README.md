@@ -2,6 +2,10 @@
 
 **[elara.navigatorbuilds.com](https://elara.navigatorbuilds.com)**
 
+[![Tests](https://github.com/aivelikivodja-bot/elara-core/actions/workflows/tests.yml/badge.svg)](https://github.com/aivelikivodja-bot/elara-core/actions/workflows/tests.yml)
+[![PyPI](https://img.shields.io/pypi/v/elara-core?color=%2300ff41&label=PyPI)](https://pypi.org/project/elara-core/)
+[![License](https://img.shields.io/badge/license-BSL--1.1-ff0040)](https://github.com/aivelikivodja-bot/elara-core/blob/main/LICENSE)
+
 Persistent presence, mood, memory, and self-awareness for AI assistants.
 
 Elara gives your AI assistant a sense of continuity across sessions. It remembers what you were working on, tracks emotional state, learns from mistakes, and builds semantic memory — all through the Model Context Protocol (MCP).
