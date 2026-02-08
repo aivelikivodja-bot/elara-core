@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "elara-core"
-version = "0.9.0"
+version = "0.9.1"
 description = "Persistent presence, mood, memory, and self-awareness for AI assistants"
 readme = "README.md"
 license = "LicenseRef-BSL-1.1"
@@ -44,7 +44,7 @@ dev = ["pytest>=7.0", "flask>=3.0.0"]
 elara = "elara_mcp.cli:main"
 
 [project.urls]
-Homepage = "https://aivelikivodja-bot.github.io/elara-core/"
+Homepage = "https://elara.navigatorbuilds.com"
 Repository = "https://github.com/aivelikivodja-bot/elara-core"
 Issues = "https://github.com/aivelikivodja-bot/elara-core/issues"
 Documentation = "https://github.com/aivelikivodja-bot/elara-core#readme"
