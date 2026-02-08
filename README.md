@@ -183,3 +183,13 @@ export ELARA_DATA_DIR=~/.claude
 ```
 
 The `elara-` prefix is preserved in all filenames for backward compatibility.
+
+## Badge
+
+Using Elara in your project? Add the badge:
+
+```markdown
+[![Powered by Elara Core](https://elara.navigatorbuilds.com/badge.svg)](https://elara.navigatorbuilds.com)
+```
+
+[![Powered by Elara Core](https://elara.navigatorbuilds.com/badge.svg)](https://elara.navigatorbuilds.com)
