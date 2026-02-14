@@ -72,6 +72,8 @@ class Events:
     # --- Memory ---
     MEMORY_SAVED = "memory_saved"
     MEMORY_RECALLED = "memory_recalled"
+    MEMORY_CONSOLIDATED = "memory_consolidated"
+    MEMORY_ARCHIVED = "memory_archived"
     CONVERSATION_INGESTED = "conversation_ingested"
 
     # --- Awareness ---

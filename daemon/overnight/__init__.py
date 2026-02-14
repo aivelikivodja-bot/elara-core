@@ -214,6 +214,23 @@ class OvernightRunner:
             except Exception as e:
                 logger.warning("Time decay failed: %s", e)
 
+        # Memory consolidation — merge duplicates, decay unused, archive weak
+        if self.config.get("enable_consolidation", True):
+            try:
+                from memory.consolidation import consolidate
+                consol_result = consolidate()
+                cognition_summary["memory_consolidated"] = True
+                cognition_summary["memories_merged"] = consol_result.get("merged", 0)
+                cognition_summary["memories_archived"] = consol_result.get("archived", 0)
+                cognition_summary["memories_strengthened"] = consol_result.get("strengthened", 0)
+                cognition_summary["memories_decayed"] = consol_result.get("decayed", 0)
+                cognition_summary["memories_remaining"] = consol_result.get("memories_after", 0)
+                logger.info("Memory consolidation: merged=%d, archived=%d, remaining=%d",
+                            consol_result.get("merged", 0), consol_result.get("archived", 0),
+                            consol_result.get("memories_after", 0))
+            except Exception as e:
+                logger.warning("Memory consolidation failed: %s", e)
+
         # Write outputs
         if all_rounds:
             findings_mode = "mixed" if self.mode == "auto" and self.queue else self.mode

@@ -127,6 +127,19 @@ def write_findings(rounds: List[Dict[str, Any]], mode: str = "exploratory",
             lines.append(f"- **Principles confirmed:** {cs['principles_confirmed']}")
         if cs.get("parse_failures"):
             lines.append(f"- **Parse failures:** {cs['parse_failures']}")
+        if cs.get("memory_consolidated"):
+            lines.append("")
+            lines.append("### Memory Consolidation")
+            if cs.get("memories_merged"):
+                lines.append(f"- **Memories merged:** {cs['memories_merged']}")
+            if cs.get("memories_archived"):
+                lines.append(f"- **Memories archived:** {cs['memories_archived']}")
+            if cs.get("memories_strengthened"):
+                lines.append(f"- **Memories strengthened:** {cs['memories_strengthened']}")
+            if cs.get("memories_decayed"):
+                lines.append(f"- **Memories decayed:** {cs['memories_decayed']}")
+            if cs.get("memories_remaining"):
+                lines.append(f"- **Memories remaining:** {cs['memories_remaining']}")
         lines.append("")
 
     content = "\n".join(lines)

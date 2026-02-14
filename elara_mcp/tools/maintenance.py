@@ -2,9 +2,9 @@
 # Licensed under the Business Source License 1.1 (BSL-1.1)
 # See LICENSE file in the project root for full license text.
 
-"""Maintenance tools: rebuild indexes, briefing management, snapshot.
+"""Maintenance tools: rebuild indexes, briefing management, snapshot, memory consolidation.
 
-3 tools for infrastructure management.
+4 tools for infrastructure management.
 """
 
 from typing import Optional
@@ -291,3 +291,80 @@ def elara_snapshot() -> str:
         lines.append(f"  Briefing: {brief.get('feeds_configured', 0)} feeds, {brief.get('total_items', 0)} items")
 
     return "\n".join(lines)
+
+
+@mcp.tool()
+def elara_memory_consolidation(
+    action: str = "stats",
+) -> str:
+    """
+    Memory consolidation — merge duplicates, decay unused, archive weak.
+
+    Biological-like memory maintenance. Runs automatically during overnight
+    brain, or trigger manually here.
+
+    Args:
+        action: What to do:
+            "stats"       — Consolidation history, memory count, at-risk count
+            "consolidate" — Run full consolidation pass (merge/decay/archive)
+            "duplicates"  — Show potential duplicate pairs with similarity scores
+            "at_risk"     — Show memories with importance < 0.2
+
+    Returns:
+        Consolidation results or statistics
+    """
+    from memory.consolidation import get_consolidator
+
+    c = get_consolidator()
+
+    if action == "stats":
+        s = c.stats()
+        lines = [
+            f"Memory count: {s['memory_count']}",
+            f"Recall log entries: {s['recall_log_entries']}",
+            f"Archived memories: {s['archive_size']}",
+            f"At-risk (< 0.2): {s['at_risk_count']}",
+            f"Total consolidation runs: {s['total_runs']}",
+            f"Last run: {s.get('last_run', 'never')}",
+        ]
+        lr = s.get("last_result")
+        if lr:
+            lines.append(f"Last result: merged={lr.get('merged', 0)}, "
+                          f"archived={lr.get('archived', 0)}, "
+                          f"strengthened={lr.get('strengthened', 0)}, "
+                          f"decayed={lr.get('decayed', 0)}")
+        return "\n".join(lines)
+
+    if action == "consolidate":
+        result = c.consolidate()
+        lines = [
+            "Consolidation complete:",
+            f"  Strengthened: {result.get('strengthened', 0)}",
+            f"  Decayed: {result.get('decayed', 0)}",
+            f"  Duplicate pairs found: {result.get('duplicate_pairs_found', 0)}",
+            f"  Merged: {result.get('merged', 0)}",
+            f"  Archived: {result.get('archived', 0)}",
+            f"  Memories remaining: {result.get('memories_after', '?')}",
+        ]
+        return "\n".join(lines)
+
+    if action == "duplicates":
+        dupes = c.find_duplicates()
+        if not dupes:
+            return "No duplicate pairs found above 0.85 similarity."
+        lines = [f"Found {len(dupes)} duplicate pair(s):"]
+        for id_a, id_b, sim in dupes[:20]:
+            lines.append(f"  {id_a[:8]}..{id_b[:8]} — similarity: {sim:.4f}")
+        return "\n".join(lines)
+
+    if action == "at_risk":
+        at_risk = c.get_at_risk()
+        if not at_risk:
+            return "No memories at risk (all importance >= 0.2)."
+        lines = [f"{len(at_risk)} memories at risk:"]
+        for mem in at_risk[:20]:
+            lines.append(f"  [{mem['importance']:.3f}] {mem['type']}: {mem['content']}")
+            lines.append(f"    ID: {mem['memory_id']}  Date: {mem['date']}")
+        return "\n".join(lines)
+
+    return f"Unknown action: {action}. Use: stats, consolidate, duplicates, at_risk"
