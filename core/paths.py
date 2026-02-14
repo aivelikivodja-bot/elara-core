@@ -152,6 +152,18 @@ class ElaraPaths:
         return self._root / "elara-memory-db"
 
     @property
+    def recall_log(self) -> Path:
+        return self._root / "elara-recall-log.jsonl"
+
+    @property
+    def consolidation_state(self) -> Path:
+        return self._root / "elara-consolidation-state.json"
+
+    @property
+    def memory_archive(self) -> Path:
+        return self._root / "elara-memory-archive.jsonl"
+
+    @property
     def conversations_db(self) -> Path:
         return self._root / "elara-conversations-db"
 

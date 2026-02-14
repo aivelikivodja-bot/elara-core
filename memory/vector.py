@@ -219,6 +219,7 @@ class VectorMemory:
 
                 memories.append({
                     "content": doc,
+                    "memory_id": results["ids"][0][i],
                     "relevance": semantic_score,
                     "resonance": resonance,
                     "combined_score": combined_score,
@@ -235,7 +236,18 @@ class VectorMemory:
         # Sort by combined score
         memories.sort(key=lambda x: x["combined_score"], reverse=True)
 
-        return memories[:n_results]
+        final = memories[:n_results]
+
+        # Log recall events for consolidation tracking
+        try:
+            from memory.consolidation import log_recall
+            for mem in final:
+                if mem.get("memory_id"):
+                    log_recall(mem["memory_id"], query, mem.get("relevance", 0))
+        except Exception:
+            pass
+
+        return final
 
     def _calculate_resonance(self, memory_meta: dict, current_mood: dict) -> float:
         """

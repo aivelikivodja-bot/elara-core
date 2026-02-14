@@ -37,6 +37,8 @@ DEFAULT_CONFIG = {
     "schedule_mode": "session_aware",
     "scheduled_interval_hours": 6,
     "enable_3d_cognition": True,
+    # Memory Consolidation
+    "enable_consolidation": True,
     # Creative Drift
     "enable_drift": True,
     "drift_temperature": 0.95,
