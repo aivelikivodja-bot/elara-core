@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-BSL--1.1-ff0040)](https://github.com/aivelikivodja-bot/elara-core/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-elara.navigatorbuilds.com-%23ffb000)](https://elara.navigatorbuilds.com)
 
-Elara gives your AI assistant persistent memory, mood, self-awareness, and overnight thinking — all through the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). **38 tools. 12 modules. 20K+ lines of Python. Everything runs locally.**
+Elara gives your AI assistant persistent memory, mood, self-awareness, and overnight thinking — all through the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). **39 tools. 12 modules. 26K+ lines of Python. Everything runs locally.**
 
 ```
 You: "Morning."
@@ -308,6 +308,19 @@ pytest
 | **Python** | 3.10, 3.11, 3.12 |
 | **OS** | Linux, macOS, Windows (WSL recommended) |
 | **MCP Clients** | Claude Code, Claude Desktop, Cursor, Windsurf, Cline |
+
+---
+
+## Whitepapers & Protocol
+
+Elara Core is the **Layer 3 reference implementation** of the [Elara Protocol](https://github.com/aivelikivodja-bot/elara-protocol) — a post-quantum universal validation layer for digital work.
+
+| Document | Description |
+|----------|-------------|
+| [**Elara Core Whitepaper v1.3.0**](ELARA-CORE-WHITEPAPER.v1.3.0.md) | Full architecture: 3D Cognition, persistent memory, emotional modeling, deployment modularity, continuous autonomous thinking |
+| [**Elara Protocol**](https://github.com/aivelikivodja-bot/elara-protocol) | The universal validation protocol — DAM architecture, post-quantum crypto, interplanetary operations |
+
+**Dual-use architecture:** Elara Core serves both industrial applications (manufacturing monitoring, research assistants, anomaly detection) and emotional companionship systems (humanoid robotics, therapeutic AI, personal companions) from a single codebase. See [Whitepaper Section 2.3](ELARA-CORE-WHITEPAPER.v1.3.0.md#23-deployment-modularity-two-independent-axes).
 
 ---
 
