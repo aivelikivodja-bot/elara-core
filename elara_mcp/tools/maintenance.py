@@ -24,7 +24,7 @@ def elara_rebuild_indexes(
     Args:
         collection: Specific collection to rebuild (default: all).
             Options: memories, milestones, conversations, corrections,
-                     reasoning, synthesis, briefing
+                     reasoning, synthesis, briefing, knowledge
 
     Returns:
         Rebuild results per collection
@@ -35,7 +35,7 @@ def elara_rebuild_indexes(
         [collection] if collection
         else ["memories", "milestones", "conversations", "corrections",
               "reasoning", "synthesis", "briefing",
-              "models", "predictions", "principles"]
+              "models", "predictions", "principles", "knowledge"]
     )
 
     for coll_name in collections_to_rebuild:
@@ -109,6 +109,12 @@ def _rebuild_collection(name: str) -> str:
         from daemon.principles import reindex_all as principles_reindex
         stats = principles_reindex()
         return f"OK ({stats.get('indexed', 0)} principles re-indexed)"
+
+    if name == "knowledge":
+        from memory.knowledge.store import get_store
+        store = get_store()
+        stats = store.reindex_all()
+        return f"OK ({stats.get('indexed', 0)} nodes re-indexed)"
 
     return f"Unknown collection: {name}"
 

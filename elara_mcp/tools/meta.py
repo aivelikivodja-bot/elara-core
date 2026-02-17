@@ -76,6 +76,12 @@ def elara_do(tool: str, params: str = "{}") -> str:
     GMAIL:
       gmail(action, message_id, thread_id, query, to, subject, body, ...)
 
+    KNOWLEDGE GRAPH:
+      kg_index(path, doc_id, version)
+      kg_query(query, doc, type, semantic_id)
+      kg_validate(docs)
+      kg_diff(doc_id, v1, v2)
+
     MAINTENANCE:
       rebuild_indexes(collection)
       briefing(action, query, n, feed_name, url, category, keywords)

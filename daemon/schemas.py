@@ -548,6 +548,53 @@ class OvernightMeta(ElaraModel):
 
 
 # ============================================================================
+# KNOWLEDGE GRAPH
+# ============================================================================
+
+class KnowledgeNode(ElaraModel):
+    """Single node in the knowledge graph — addressed by 6-tuple."""
+    id: str
+    semantic_id: str
+    time: Optional[str] = None
+    source_doc: Optional[str] = None
+    source_section: Optional[str] = None
+    source_line: Optional[int] = None
+    type: str = "reference"  # definition|reference|metric|constraint|dependency
+    granularity: str = "section"  # token|line|section|document|corpus
+    confidence: float = 0.5
+    content: Optional[str] = None
+    created: Optional[str] = None
+
+
+class KnowledgeEdge(ElaraModel):
+    """Directed edge between nodes or between a node and a document."""
+    id: str
+    source_node: str
+    target_node: Optional[str] = None
+    target_doc: Optional[str] = None
+    edge_type: str  # defines|references|contradicts|depends_on|evolves_to|missing_from
+    confidence: float = 0.5
+    explanation: Optional[str] = None
+    created: Optional[str] = None
+
+
+class KnowledgeDocument(ElaraModel):
+    """Indexed document registry entry."""
+    doc_id: str
+    version: str
+    path: Optional[str] = None
+    indexed_at: Optional[str] = None
+    node_count: int = 0
+    edge_count: int = 0
+
+
+class KnowledgeAlias(ElaraModel):
+    """Maps variant names to a canonical semantic_id."""
+    semantic_id: str
+    alias: str
+
+
+# ============================================================================
 # UTILITY — validated load/save helpers
 # ============================================================================
 

@@ -360,6 +360,17 @@ class ElaraPaths:
         return self._root / "elara-session-snapshot.json"
 
     # ------------------------------------------------------------------
+    # Knowledge Graph
+    # ------------------------------------------------------------------
+    @property
+    def knowledge_db(self) -> Path:
+        return self._root / "elara-knowledge.db"
+
+    @property
+    def knowledge_vector_db(self) -> Path:
+        return self._root / "elara-knowledge-db"
+
+    # ------------------------------------------------------------------
     # Interface / storage
     # ------------------------------------------------------------------
     @property
@@ -411,6 +422,7 @@ class ElaraPaths:
             self.predictions_dir,
             self.predictions_db,
             self.principles_db,
+            self.knowledge_vector_db,
         ]
         for d in dirs:
             d.mkdir(parents=True, exist_ok=True)

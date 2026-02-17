@@ -13,7 +13,7 @@ Profiles:
   --profile full  → 39 individual tool schemas (backward compatible)
   --profile lean  → 7 core schemas + 1 elara_do meta-tool (default, ~5% context)
 
-39 tools across 12 modules:
+43 tools across 13 modules:
 - memory:       elara_remember, elara_recall, elara_recall_conversation, elara_conversations (4)
 - mood:         elara_mood, elara_mood_adjust, elara_imprint, elara_mode, elara_status (5)
 - episodes:     elara_episode_start, elara_episode_note, elara_episode_end, elara_episode_query, elara_context (5)
@@ -22,6 +22,7 @@ Profiles:
 - dreams:       elara_dream, elara_dream_info (2)
 - cognitive:    elara_reasoning, elara_outcome, elara_synthesis (3)
 - cognition_3d: elara_model, elara_prediction, elara_principle (3)
+- knowledge:    elara_kg_index, elara_kg_query, elara_kg_validate, elara_kg_diff (4)
 - business:     elara_business (1)
 - llm:          elara_llm (1)
 - gmail:        elara_gmail (1)
@@ -42,6 +43,7 @@ import elara_mcp.tools.cognition_3d
 import elara_mcp.tools.business
 import elara_mcp.tools.llm
 import elara_mcp.tools.gmail
+import elara_mcp.tools.knowledge
 import elara_mcp.tools.maintenance
 
 # In lean mode, register the elara_do meta-tool for dispatching
