@@ -371,6 +371,17 @@ class ElaraPaths:
         return self._root / "elara-knowledge-db"
 
     # ------------------------------------------------------------------
+    # Layer 1 Bridge (cryptographic validation)
+    # ------------------------------------------------------------------
+    @property
+    def identity_file(self) -> Path:
+        return self._root / "elara-identity.json"
+
+    @property
+    def dag_file(self) -> Path:
+        return self._root / "elara-dag.sqlite"
+
+    # ------------------------------------------------------------------
     # Workflows (learned action sequences)
     # ------------------------------------------------------------------
     @property

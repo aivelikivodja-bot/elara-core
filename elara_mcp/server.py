@@ -52,6 +52,13 @@ import elara_mcp.tools.maintenance
 if get_profile() == "lean":
     import elara_mcp.tools.meta
 
+# Initialize Layer 1 bridge (optional — silent if not installed)
+try:
+    from core.layer1_bridge import setup as setup_bridge
+    setup_bridge()
+except Exception:
+    pass
+
 
 if __name__ == "__main__":
     mcp.run()

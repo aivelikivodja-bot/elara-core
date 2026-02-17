@@ -126,6 +126,9 @@ class Events:
     # --- Handoff ---
     HANDOFF_SAVED = "handoff_saved"
 
+    # --- Layer 1 Bridge ---
+    ARTIFACT_VALIDATED = "artifact_validated"
+
 
 # ============================================================================
 # EVENT DATA

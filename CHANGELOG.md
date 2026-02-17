@@ -2,6 +2,23 @@
 
 All notable changes to Elara Core.
 
+## [0.10.8] — 2026-02-17
+
+### Added — Layer 1 Bridge (Cryptographic Validation of Cognitive Artifacts)
+- **Layer 1 Bridge** (`core/layer1_bridge.py`) — subscribes to Layer 3 event bus, creates signed Layer 1 validation records for significant cognitive events
+- **Post-quantum dual signatures** — Dilithium3 + SPHINCS+ (Profile A) on every validated artifact
+- **10 creation events validated** — model, prediction, principle, workflow, correction, dream, episode, handoff, synthesis, outcome
+- **Local DAG storage** — SQLite-backed directed acyclic graph with parent chaining for causal history
+- **Persistent AI identity** — generated once, reused across sessions, private keys protected (0600)
+- **ELRA wire format** — byte-identical with Layer 1, Layer 1.5 (Rust), and hardware DAM spec
+- **SOVEREIGN classification** — cognitive artifacts never leave the device by default
+- **Optional dependency** — if `elara-protocol` not installed, bridge is dormant with zero impact
+
+### Changed
+- `ARTIFACT_VALIDATED` event type added to event bus
+- `identity_file` and `dag_file` paths added to ElaraPaths
+- MCP server initializes bridge at startup (silent fallback)
+
 ## [0.10.7] — 2026-02-17
 
 ### Added — Workflow Patterns (4th 3D Cognition Output)
