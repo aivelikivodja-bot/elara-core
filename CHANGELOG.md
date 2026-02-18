@@ -2,6 +2,21 @@
 
 All notable changes to Elara Core.
 
+## [0.12.0] — 2026-02-18
+
+### Added — Layer 2 Testnet + Witness Persistence
+- **Testnet script** (`scripts/testnet.py`) — 2+ node end-to-end proof: create record, exchange, witness, verify trust score
+- **Testnet integration tests** (`tests/test_testnet.py`) — 4 tests covering status, exchange, witness, submit
+- **CLI: `elara testnet`** — run N-node testnet demo with `--nodes`, `--port-base`, `--verbose`
+- **Witness persistence** — SQLite-backed attestation store (was in-memory only), survives restarts
+- **Attestation dedup via PRIMARY KEY** — `(record_id, witness_identity)` enforced at DB level
+
+### Changed
+- `WitnessManager` accepts optional `db_path` parameter; falls back to in-memory if not provided
+- `NetworkServer` accepts `attestations_db` parameter, passed through to `WitnessManager`
+- MCP `elara_network` start action now passes `attestations_db` path from `core.paths`
+- Scheduler quiet hours log fixed (was crashing when quiet hours disabled)
+
 ## [0.11.0] — 2026-02-18
 
 ### Added — Layer 2 Network Stub + CLI Crypto Tools

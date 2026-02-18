@@ -23,10 +23,11 @@ class NetworkServer:
         GET  /status      — node identity and DAG info
     """
 
-    def __init__(self, identity, dag, port: int = 9473):
+    def __init__(self, identity, dag, port: int = 9473, attestations_db=None):
         self._identity = identity
         self._dag = dag
         self._port = port
+        self._attestations_db = attestations_db
         self._app = None
         self._runner = None
         self._witness_manager = None
@@ -40,7 +41,7 @@ class NetworkServer:
             return
 
         from network.witness import WitnessManager
-        self._witness_manager = WitnessManager()
+        self._witness_manager = WitnessManager(db_path=self._attestations_db)
 
         self._app = web.Application()
         self._app.router.add_post("/records", self._handle_submit_record)
@@ -63,6 +64,9 @@ class NetworkServer:
 
     async def stop(self) -> None:
         """Stop the server."""
+        if self._witness_manager:
+            self._witness_manager.close()
+            self._witness_manager = None
         if self._runner:
             await self._runner.cleanup()
             self._runner = None

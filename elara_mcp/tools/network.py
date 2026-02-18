@@ -149,7 +149,12 @@ def _start() -> str:
     import threading
     from network.server import NetworkServer
 
-    _server = NetworkServer(bridge._identity, bridge._dag, port=net_port)
+    from core.paths import get_paths
+    _paths = get_paths()
+    _server = NetworkServer(
+        bridge._identity, bridge._dag, port=net_port,
+        attestations_db=_paths.attestations_db,
+    )
 
     def _run_server():
         loop = asyncio.new_event_loop()
