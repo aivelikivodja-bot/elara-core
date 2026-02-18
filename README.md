@@ -1,6 +1,6 @@
 # Elara Core
 
-> **Your AI doesn't remember yesterday. Elara fixes that.**
+> **Layer 3 of the [Elara Protocol](https://github.com/navigatorbuilds/elara-protocol) — a cognitive architecture for persistent AI awareness.**
 
 [![Tests](https://github.com/navigatorbuilds/elara-core/actions/workflows/tests.yml/badge.svg)](https://github.com/navigatorbuilds/elara-core/actions/workflows/tests.yml)
 [![PyPI](https://img.shields.io/pypi/v/elara-core?color=%2300ff41&label=PyPI)](https://pypi.org/project/elara-core/)
@@ -8,7 +8,17 @@
 [![License](https://img.shields.io/badge/license-BSL--1.1-ff0040)](https://github.com/navigatorbuilds/elara-core/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-elara.navigatorbuilds.com-%23ffb000)](https://elara.navigatorbuilds.com)
 
-Elara gives your AI assistant persistent memory, mood, self-awareness, and overnight thinking — all through the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). **45 tools. 15 modules. 31K+ lines of Python. Everything runs locally.**
+Elara Core is the **Layer 3 reference implementation** of the [Elara Protocol](https://github.com/navigatorbuilds/elara-protocol) — a post-quantum universal validation layer for digital work. Where Layers 1 and 1.5 handle cryptographic signing and validation, and Layer 2 handles network consensus, **Layer 3 provides the intelligence**: persistent memory, emotional modeling, autonomous reasoning, and cognitive output that feeds back into the protocol's cryptographic proof chain.
+
+**45 tools. 15 modules. 31K+ lines of Python. Everything runs locally.** Delivered via [Model Context Protocol (MCP)](https://modelcontextprotocol.io).
+
+```
+The Elara Protocol Stack:
+Layer 1   — Local validation (hash, sign, prove) — post-quantum, offline, 2ms
+Layer 1.5 — Rust DAM VM (optional performance path)
+Layer 2   — Network consensus (Adaptive Witness Consensus)
+Layer 3   — AI intelligence (THIS REPO) — memory, cognition, awareness
+```
 
 ```
 You: "Morning."
@@ -316,18 +326,21 @@ pytest
 
 ---
 
-## Whitepapers & Protocol
+## The Elara Protocol
 
-Elara Core is the **Layer 3 reference implementation** of the [Elara Protocol](https://github.com/navigatorbuilds/elara-protocol) — a post-quantum universal validation layer for digital work.
+Elara Core is one layer of a larger system. The [Elara Protocol](https://github.com/navigatorbuilds/elara-protocol) is a post-quantum universal validation layer for digital work — from a poem written on a $30 phone in Kenya to telemetry from a Mars colony. It introduces the **Directed Acyclic Mesh (DAM)**, a novel 5-dimensional data structure with partition-tolerant consensus across planetary distances.
 
-| Document | Description |
-|----------|-------------|
-| [**Elara Core Whitepaper v1.3.4**](ELARA-CORE-WHITEPAPER.v1.3.3.md) | Full architecture: Layer 1 Bridge, 3D Cognition, workflow patterns, knowledge graph, persistent memory, emotional modeling, deployment modularity, continuous autonomous thinking |
-| [**Elara Protocol**](https://github.com/navigatorbuilds/elara-protocol) | The universal validation protocol — DAM architecture, post-quantum crypto, interplanetary operations |
+| Document | Where |
+|----------|-------|
+| **Elara Protocol Whitepaper v0.5.0** | [GitHub](https://github.com/navigatorbuilds/elara-protocol) |
+| **Elara Core Whitepaper v1.3.6** | [GitHub](https://github.com/navigatorbuilds/elara-protocol) |
+| **US Provisional Patent** | Application No. 63/983,064 (Feb 14, 2026) |
 
-**Dual-use architecture:** Elara Core serves both industrial applications (manufacturing monitoring, research assistants, anomaly detection) and emotional companionship systems (humanoid robotics, therapeutic AI, personal companions) from a single codebase. See [Whitepaper Section 2.3](ELARA-CORE-WHITEPAPER.v1.3.3.md#23-deployment-modularity-two-independent-axes).
-
-> **Layer 2 Network (v0.11.0):** Minimum viable network with mDNS peer discovery, record exchange, witness attestation, and trust scoring. CLI tools for file signing and verification. Bridge hardened with validation, dedup, and rate limiting.
+**What Layer 3 adds to the protocol:**
+- Cognitive outputs (predictions, models, principles) are dual-signed with Dilithium3 + SPHINCS+ and stored in the cryptographic DAG via the Layer 1 bridge
+- Pattern recognition across validation streams — anomaly detection, fraud prediction, routing optimization
+- Continuous autonomous thinking — 15-phase analysis engine running every 2 hours
+- Dual-use architecture: industrial applications (manufacturing, research) and emotional companionship (humanoid robotics, therapeutic AI) from a single codebase
 
 ---
 
