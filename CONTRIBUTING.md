@@ -27,7 +27,8 @@ elara-core/
 ├── core/           # Core library (paths, schemas, Elara class)
 ├── daemon/         # State engine (mood, presence, emotions, decay)
 ├── elara_mcp/      # MCP server + tool definitions
-│   └── tools/      # 34 tools across 11 modules
+│   └── tools/      # 45 tools across 15 modules
+├── network/        # Layer 2 network (discovery, server, client, witness, trust)
 ├── tests/          # Test suite (pytest)
 ├── docs/           # GitHub Pages site
 └── pyproject.toml  # Package config

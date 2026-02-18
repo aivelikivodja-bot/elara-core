@@ -2,6 +2,28 @@
 
 All notable changes to Elara Core.
 
+## [0.11.0] — 2026-02-18
+
+### Added — Layer 2 Network Stub + CLI Crypto Tools
+- **Layer 2 network package** (`network/`) — minimum viable network with 6 files (~985 lines)
+- **Peer discovery** — mDNS via zeroconf (zero-config LAN) + hardcoded peer lists (WAN)
+- **Network server** — aiohttp HTTP endpoints: `POST /records`, `GET /records`, `POST /witness`, `GET /status`
+- **Network client** — async HTTP client for all 4 server endpoints
+- **Witness attestation** — counter-signing with dedup, in-memory attestation store
+- **Trust scoring** — `T = 1 - 1/(1 + n)` formula (0 witnesses → 0.0, 3 → 0.75, 10 → 0.91)
+- **`elara_network` MCP tool** — status, peers, start, stop, push, sync, witness (7 actions)
+- **CLI: `elara sign <file>`** — dual-sign files with Dilithium3+SPHINCS+, write `.elara.proof`
+- **CLI: `elara verify <proof>`** — verify signature + content hash from proof file
+- **CLI: `elara identity`** — show identity hash, entity type, profile, key sizes
+- **CLI: `elara dag stats`** — record count, edges, tips, roots, time range
+- **Bridge hardening** — input validation, dedup cache (10K artifacts), sliding-window rate limit (120/min, env-configurable via `ELARA_BRIDGE_RATE_LIMIT`), `BridgeMetrics` dataclass with 6 counters, granular sign-vs-DAG error tracking
+
+### Changed
+- 6 new event types: `RECORD_RECEIVED`, `RECORD_WITNESSED`, `PEER_DISCOVERED`, `PEER_LOST`, `NETWORK_STARTED`, `NETWORK_STOPPED`
+- 3 new paths: `network_config`, `network_peers`, `attestations_db`
+- 45 MCP tools across 15 modules (was 44/14)
+- Optional dependencies: `pip install elara-core[network]` (aiohttp, zeroconf)
+
 ## [0.10.8] — 2026-02-17
 
 ### Added — Layer 1 Bridge (Cryptographic Validation of Cognitive Artifacts)

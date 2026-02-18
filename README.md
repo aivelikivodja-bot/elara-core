@@ -8,7 +8,7 @@
 [![License](https://img.shields.io/badge/license-BSL--1.1-ff0040)](https://github.com/navigatorbuilds/elara-core/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-elara.navigatorbuilds.com-%23ffb000)](https://elara.navigatorbuilds.com)
 
-Elara gives your AI assistant persistent memory, mood, self-awareness, and overnight thinking — all through the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). **44 tools. 14 modules. 27K+ lines of Python. Everything runs locally.**
+Elara gives your AI assistant persistent memory, mood, self-awareness, and overnight thinking — all through the [Model Context Protocol (MCP)](https://modelcontextprotocol.io). **45 tools. 15 modules. 31K+ lines of Python. Everything runs locally.**
 
 ```
 You: "Morning."
@@ -174,7 +174,7 @@ That's the core loop: **remember → recall → track → reflect**.
 | `elara_episode_start` | Begin tracking a work session |
 | `elara_status` | Full status check |
 
-**All 44 tools by module:**
+**All 45 tools by module:**
 
 <details>
 <summary>Click to expand full tool list</summary>
@@ -195,6 +195,7 @@ That's the core loop: **remember → recall → track → reflect**.
 | **LLM** | `elara_llm` | 1 |
 | **Gmail** | `elara_gmail` | 1 |
 | **Maintenance** | `elara_rebuild_indexes`, `elara_briefing`, `elara_snapshot`, `elara_memory_consolidation` | 4 |
+| **Network** | `elara_network` | 1 |
 
 </details>
 
@@ -216,7 +217,7 @@ That's the core loop: **remember → recall → track → reflect**.
 │  Memory · Mood · Episodes · Goals · Awareness    │
 │  Dreams · Cognitive · 3D Cognition · Workflows   │
 │  Knowledge · Business · LLM · Gmail · Maintenance│
-│                  (44 tools)                       │
+│  Network                    (45 tools)            │
 └────────────────────┬────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────┐
@@ -326,7 +327,7 @@ Elara Core is the **Layer 3 reference implementation** of the [Elara Protocol](h
 
 **Dual-use architecture:** Elara Core serves both industrial applications (manufacturing monitoring, research assistants, anomaly detection) and emotional companionship systems (humanoid robotics, therapeutic AI, personal companions) from a single codebase. See [Whitepaper Section 2.3](ELARA-CORE-WHITEPAPER.v1.3.3.md#23-deployment-modularity-two-independent-axes).
 
-> **Layer 1 Bridge (v0.10.8):** Cognitive artifacts are now cryptographically validated with post-quantum dual signatures (Dilithium3 + SPHINCS+). Every prediction, correction, and crystallized principle gets a signed proof stored in a local DAG.
+> **Layer 2 Network (v0.11.0):** Minimum viable network with mDNS peer discovery, record exchange, witness attestation, and trust scoring. CLI tools for file signing and verification. Bridge hardened with validation, dedup, and rate limiting.
 
 ---
 
@@ -340,6 +341,8 @@ Elara Core is the **Layer 3 reference implementation** of the [Elara Protocol](h
 ---
 
 ## What's New
+
+**v0.11.0 — Layer 2 Network + CLI Tools** — Minimum viable network: mDNS peer discovery, HTTP record exchange, witness attestation, trust scoring. CLI: `elara sign/verify/identity/dag`. Bridge hardened with validation guards, dedup (10K cache), and rate limiting (120/min). Optional — `pip install elara-core[network]`.
 
 **v0.10.8 — Layer 1 Bridge** — Cryptographic validation of cognitive artifacts. Predictions, corrections, models, principles, and other significant events are dual-signed (Dilithium3 + SPHINCS+) and stored in a local DAG. Optional — dormant if `elara-protocol` not installed.
 
