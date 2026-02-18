@@ -321,10 +321,12 @@ Elara Core is the **Layer 3 reference implementation** of the [Elara Protocol](h
 
 | Document | Description |
 |----------|-------------|
-| [**Elara Core Whitepaper v1.3.3**](ELARA-CORE-WHITEPAPER.v1.3.3.md) | Full architecture: 3D Cognition, workflow patterns, knowledge graph, persistent memory, emotional modeling, deployment modularity, continuous autonomous thinking |
+| [**Elara Core Whitepaper v1.3.4**](ELARA-CORE-WHITEPAPER.v1.3.3.md) | Full architecture: Layer 1 Bridge, 3D Cognition, workflow patterns, knowledge graph, persistent memory, emotional modeling, deployment modularity, continuous autonomous thinking |
 | [**Elara Protocol**](https://github.com/navigatorbuilds/elara-protocol) | The universal validation protocol — DAM architecture, post-quantum crypto, interplanetary operations |
 
 **Dual-use architecture:** Elara Core serves both industrial applications (manufacturing monitoring, research assistants, anomaly detection) and emotional companionship systems (humanoid robotics, therapeutic AI, personal companions) from a single codebase. See [Whitepaper Section 2.3](ELARA-CORE-WHITEPAPER.v1.3.3.md#23-deployment-modularity-two-independent-axes).
+
+> **Layer 1 Bridge (v0.10.8):** Cognitive artifacts are now cryptographically validated with post-quantum dual signatures (Dilithium3 + SPHINCS+). Every prediction, correction, and crystallized principle gets a signed proof stored in a local DAG.
 
 ---
 
@@ -338,6 +340,8 @@ Elara Core is the **Layer 3 reference implementation** of the [Elara Protocol](h
 ---
 
 ## What's New
+
+**v0.10.8 — Layer 1 Bridge** — Cryptographic validation of cognitive artifacts. Predictions, corrections, models, principles, and other significant events are dual-signed (Dilithium3 + SPHINCS+) and stored in a local DAG. Optional — dormant if `elara-protocol` not installed.
 
 **v0.10.7 — Workflow Patterns** — Learned action sequences from episode history. The overnight brain detects recurring multi-step processes and crystallizes them into workflow patterns. When a known trigger is detected mid-session, remaining steps are proactively surfaced.
 

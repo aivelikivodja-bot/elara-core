@@ -4,15 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ELARA CORE // Persistent Memory for AI</title>
-    <meta name="description" content="Open-source MCP server that gives AI assistants persistent memory, mood, episodic tracking, dreams, and 34 tools.">
+    <meta name="description" content="Open-source MCP server that gives AI assistants persistent memory, mood, episodic tracking, dreams, and 44 tools.">
     <meta property="og:title" content="ELARA CORE // Persistent Memory for AI">
-    <meta property="og:description" content="16,800 lines of Python that turn an amnesiac AI into one that remembers.">
+    <meta property="og:description" content="27,000+ lines of Python that turn an amnesiac AI into one that remembers.">
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://elara.navigatorbuilds.com">
     <meta property="og:image" content="https://elara.navigatorbuilds.com/og-image.svg">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="ELARA CORE // Persistent Memory for AI">
-    <meta name="twitter:description" content="16,800 lines of Python that turn an amnesiac AI into one that remembers.">
+    <meta name="twitter:description" content="27,000+ lines of Python that turn an amnesiac AI into one that remembers.">
     <meta name="twitter:site" content="@NavigatorBuilds">
     <meta name="keywords" content="MCP server, AI memory, Claude Code, persistent memory, AI assistant, Model Context Protocol, ChromaDB, semantic memory">
     <meta name="author" content="Nenad Vasic">
@@ -40,7 +40,7 @@
         "url": "https://navigatorbuilds.com"
       },
       "programmingLanguage": "Python",
-      "softwareVersion": "0.10.0"
+      "softwareVersion": "0.10.8"
     }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -936,7 +936,7 @@
             <div class="hero-prefix">// mcp server &mdash; source available (BSL-1.1)</div>
             <h1>PERSISTENT MEMORY<br>FOR AI ASSISTANTS</h1>
             <p style="color: var(--text-bright); font-size: 18px; margin-bottom: 12px;">You tell Claude about your project on Monday. On Friday, it still knows.</p>
-            <p><span class="hl">35 tools.</span> <span class="hl-red">11 modules.</span> Mood, memory, episodes, dreams, reasoning, corrections, email. Sessions stop dying. Context accumulates. Your AI remembers.</p>
+            <p><span class="hl">44 tools.</span> <span class="hl-red">14 modules.</span> Mood, memory, episodes, dreams, reasoning, corrections, email. Sessions stop dying. Context accumulates. Your AI remembers.</p>
             <div class="hero-actions">
                 <a href="#install" class="btn-primary">> INITIALIZE</a>
                 <a href="/compare.html" class="btn-red">SEE THE DIFFERENCE</a>
@@ -969,15 +969,15 @@
     <section class="stats">
         <div class="container">
             <div class="stat">
-                <div class="stat-value">16,800+</div>
+                <div class="stat-value">27,000+</div>
                 <div class="stat-label">Lines</div>
             </div>
             <div class="stat">
-                <div class="stat-value">35</div>
+                <div class="stat-value">44</div>
                 <div class="stat-label">Tools</div>
             </div>
             <div class="stat">
-                <div class="stat-value">11</div>
+                <div class="stat-value">14</div>
                 <div class="stat-label">Modules</div>
             </div>
             <div class="stat">
@@ -1131,14 +1131,14 @@
                 <div class="terminal-body">
                     <div><span class="prompt">$</span> <span class="cmd-text">elara serve</span></div>
                     <div class="output">[BOOT] Loading state... OK</div>
-                    <div class="output">[BOOT] ChromaDB connected (7 collections)</div>
+                    <div class="output">[BOOT] ChromaDB connected (9 collections)</div>
                     <div class="output">[BOOT] 70 memories, 1080 conversations indexed</div>
                     <div class="output">[BOOT] Mood: neutral-warm (valence: 0.6)</div>
                     <div class="output">[BOOT] 3 corrections loaded</div>
                     <div class="output">[BOOT] Overwatch daemon: active</div>
                     <div class="info">---</div>
                     <div class="success">[MCP] Server ready on stdio</div>
-                    <div class="success">[MCP] 34 tools registered across 10 modules</div>
+                    <div class="success">[MCP] 44 tools registered across 14 modules</div>
                     <div class="info">&nbsp;</div>
                     <div><span class="prompt">></span> <span class="info">Waiting for client connection...</span><span class="cursor-blink"></span></div>
                 </div>
@@ -1152,8 +1152,8 @@
     <section class="tools" id="tools">
         <div class="container">
             <div class="section-header">
-                <h2>// 35 MCP TOOLS</h2>
-                <p>11 modules. Every tool exposed to your AI client.</p>
+                <h2>// 44 MCP TOOLS</h2>
+                <p>14 modules. Every tool exposed to your AI client.</p>
             </div>
             <div class="tools-grid">
                 <div class="tool-group">
@@ -1269,7 +1269,7 @@
 │   ├── overwatch/  <span class="comment"># real-time conversation watcher</span>
 │   └── episodic/   <span class="comment"># episode tracking, compression</span>
 ├── <span class="dir">memory/</span>         <span class="comment"># chromadb, vector search</span>
-├── <span class="dir">elara_mcp/</span>      <span class="comment"># mcp server + 35 tool defs</span>
+├── <span class="dir">elara_mcp/</span>      <span class="comment"># mcp server + 44 tool defs</span>
 ├── <span class="dir">hooks/</span>          <span class="comment"># boot scripts, activity hooks</span>
 ├── <span class="dir">interface/</span>      <span class="comment"># web dashboard, storage</span>
 ├── <span class="dir">voice/</span>          <span class="comment"># tts integration</span>
@@ -1286,7 +1286,7 @@
         <div class="container">
             <div class="section-header">
                 <h2>// WORKS WITH ANY MCP CLIENT</h2>
-                <p>Elara uses the <span class="hl">Model Context Protocol (MCP)</span> &mdash; an open standard by Anthropic. Any client that speaks MCP gets all 35 tools automatically. The AI model doesn't matter. The client does.</p>
+                <p>Elara uses the <span class="hl">Model Context Protocol (MCP)</span> &mdash; an open standard by Anthropic. Any client that speaks MCP gets all 44 tools automatically. The AI model doesn't matter. The client does.</p>
             </div>
             <div class="compat-grid">
                 <div class="compat-card">
