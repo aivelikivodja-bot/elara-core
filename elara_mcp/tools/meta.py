@@ -91,6 +91,9 @@ def elara_do(tool: str, params: str = "{}") -> str:
       snapshot()
       memory_consolidation(action, resolve_ids)
 
+    NETWORK:
+      network(action, host, port, record_id, limit)
+
     Returns:
         Tool output or error message
     """

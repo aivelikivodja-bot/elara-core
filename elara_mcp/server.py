@@ -13,7 +13,7 @@ Profiles:
   --profile full  → 39 individual tool schemas (backward compatible)
   --profile lean  → 7 core schemas + 1 elara_do meta-tool (default, ~5% context)
 
-44 tools across 14 modules:
+45 tools across 15 modules:
 - memory:       elara_remember, elara_recall, elara_recall_conversation, elara_conversations (4)
 - mood:         elara_mood, elara_mood_adjust, elara_imprint, elara_mode, elara_status (5)
 - episodes:     elara_episode_start, elara_episode_note, elara_episode_end, elara_episode_query, elara_context (5)
@@ -28,6 +28,7 @@ Profiles:
 - llm:          elara_llm (1)
 - gmail:        elara_gmail (1)
 - maintenance:  elara_rebuild_indexes, elara_briefing, elara_snapshot, elara_memory_consolidation (4)
+- network:      elara_network (1)
 """
 
 from elara_mcp._app import mcp, get_profile
@@ -47,6 +48,7 @@ import elara_mcp.tools.llm
 import elara_mcp.tools.gmail
 import elara_mcp.tools.knowledge
 import elara_mcp.tools.maintenance
+import elara_mcp.tools.network
 
 # In lean mode, register the elara_do meta-tool for dispatching
 if get_profile() == "lean":

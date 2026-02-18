@@ -19,9 +19,36 @@ import hashlib
 import json
 import logging
 import os
+import time
+from dataclasses import dataclass, field
 from typing import Optional
 
 logger = logging.getLogger("elara.layer1_bridge")
+
+
+# ---------------------------------------------------------------------------
+# Bridge metrics
+# ---------------------------------------------------------------------------
+
+@dataclass
+class BridgeMetrics:
+    """Counters for bridge health monitoring."""
+    processed: int = 0
+    failed_sign: int = 0
+    failed_dag: int = 0
+    skipped_dedup: int = 0
+    skipped_rate_limit: int = 0
+    skipped_invalid: int = 0
+
+    def to_dict(self) -> dict:
+        return {
+            "processed": self.processed,
+            "failed_sign": self.failed_sign,
+            "failed_dag": self.failed_dag,
+            "skipped_dedup": self.skipped_dedup,
+            "skipped_rate_limit": self.skipped_rate_limit,
+            "skipped_invalid": self.skipped_invalid,
+        }
 
 
 def is_available() -> bool:
@@ -99,6 +126,13 @@ class L1Bridge:
 
         self._version = self._get_version()
 
+        # Hardening state
+        self._metrics = BridgeMetrics()
+        self._seen_artifact_ids: set = set()
+        self._dedup_max = 10_000
+        self._rate_timestamps: list = []
+        self._rate_limit = int(os.environ.get("ELARA_BRIDGE_RATE_LIMIT", "120"))
+
         logger.info(
             "Layer 1 bridge initialized — identity=%s, dag_records=%d",
             self._identity.identity_hash[:12],
@@ -156,29 +190,95 @@ class L1Bridge:
         logger.info("Subscribed to %d event types", len(_get_validated_events()))
 
     # ------------------------------------------------------------------
+    # Guards: validation, dedup, rate limit
+    # ------------------------------------------------------------------
+
+    def _validate_event_data(self, event) -> bool:
+        """Reject events with non-dict or empty data."""
+        if not isinstance(event.data, dict) or not event.data:
+            self._metrics.skipped_invalid += 1
+            logger.debug("Skipped invalid event data for %s", event.type)
+            return False
+        return True
+
+    def _check_dedup(self, artifact_id: str) -> bool:
+        """Skip if same artifact_id already signed this session."""
+        if not artifact_id:
+            return True  # no ID to dedup on
+        if artifact_id in self._seen_artifact_ids:
+            self._metrics.skipped_dedup += 1
+            logger.debug("Dedup: skipping already-signed artifact %s", artifact_id[:12])
+            return False
+        # Evict oldest if at capacity
+        if len(self._seen_artifact_ids) >= self._dedup_max:
+            self._seen_artifact_ids.clear()
+        self._seen_artifact_ids.add(artifact_id)
+        return True
+
+    def _check_rate_limit(self) -> bool:
+        """Sliding window rate limit (default 120/min)."""
+        now = time.monotonic()
+        cutoff = now - 60.0
+        self._rate_timestamps = [t for t in self._rate_timestamps if t > cutoff]
+        if len(self._rate_timestamps) >= self._rate_limit:
+            self._metrics.skipped_rate_limit += 1
+            logger.warning("Rate limit: %d events/min exceeded", self._rate_limit)
+            return False
+        self._rate_timestamps.append(now)
+        return True
+
+    # ------------------------------------------------------------------
     # Event handling
     # ------------------------------------------------------------------
 
     def _handle_event(self, event):
-        """Route creation events to validation."""
+        """Route creation events to validation with guards."""
+        artifact_type = _get_validated_events().get(event.type)
+        if artifact_type is None:
+            return
+
+        # Guard: validate event data
+        if not self._validate_event_data(event):
+            return
+
+        # Guard: rate limit
+        if not self._check_rate_limit():
+            return
+
+        # Build metadata early so we can dedup on artifact_id
         try:
-            artifact_type = _get_validated_events().get(event.type)
-            if artifact_type is None:
-                return
-
-            content = self._build_artifact_content(event.type, event.data)
             metadata = self._build_metadata(artifact_type, event.data)
-            record_hash = self._validate(content, metadata)
-
-            if record_hash:
-                logger.debug(
-                    "Validated %s artifact: %s -> %s",
-                    artifact_type,
-                    metadata.get("artifact_id", "?")[:12],
-                    record_hash[:12],
-                )
         except Exception:
-            logger.exception("Bridge error handling %s", event.type)
+            self._metrics.skipped_invalid += 1
+            logger.exception("Bridge: failed to build metadata for %s", event.type)
+            return
+
+        # Guard: dedup
+        if not self._check_dedup(metadata.get("artifact_id", "")):
+            return
+
+        # Build content + sign + insert
+        try:
+            content = self._build_artifact_content(event.type, event.data)
+            record_hash = self._validate(content, metadata)
+        except Exception as e:
+            # Distinguish sign failures from DAG failures
+            err_msg = str(e).lower()
+            if "sign" in err_msg or "key" in err_msg:
+                self._metrics.failed_sign += 1
+                logger.exception("Bridge: signing failed for %s", event.type)
+            else:
+                self._metrics.failed_dag += 1
+                logger.exception("Bridge: DAG insert failed for %s", event.type)
+            return
+
+        self._metrics.processed += 1
+        logger.debug(
+            "Validated %s artifact: %s -> %s",
+            artifact_type,
+            metadata.get("artifact_id", "?")[:12],
+            record_hash[:12] if record_hash else "?",
+        )
 
     # ------------------------------------------------------------------
     # Content & metadata builders
@@ -290,10 +390,11 @@ class L1Bridge:
     # ------------------------------------------------------------------
 
     def stats(self) -> dict:
-        """DAG statistics with artifact type breakdown."""
+        """DAG statistics with artifact type breakdown and bridge metrics."""
         base = self._dag.stats()
         base["identity"] = self._identity.identity_hash[:16] + "..."
         base["identity_entity"] = self._identity.entity_type.name
+        base["bridge_metrics"] = self._metrics.to_dict()
         return base
 
     def provenance(self, artifact_id: str) -> list:

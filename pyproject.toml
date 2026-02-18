@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "elara-core"
-version = "0.10.8"
+version = "0.11.0"
 description = "Persistent presence, mood, memory, and self-awareness for AI assistants"
 readme = "README.md"
 license = "LicenseRef-BSL-1.1"
@@ -38,6 +38,7 @@ gmail = [
     "google-auth-oauthlib>=1.0.0",
     "google-api-python-client>=2.0.0",
 ]
+network = ["aiohttp>=3.9.0", "zeroconf>=0.131.0"]
 dev = ["pytest>=7.0", "flask>=3.0.0"]
 
 [project.scripts]
@@ -63,6 +64,7 @@ packages = [
     "elara_mcp",
     "hooks",
     "interface",
+    "network",
     "senses",
     "voice",
     "scripts",

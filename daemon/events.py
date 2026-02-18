@@ -129,6 +129,14 @@ class Events:
     # --- Layer 1 Bridge ---
     ARTIFACT_VALIDATED = "artifact_validated"
 
+    # --- Layer 2 Network ---
+    RECORD_RECEIVED = "record_received"
+    RECORD_WITNESSED = "record_witnessed"
+    PEER_DISCOVERED = "peer_discovered"
+    PEER_LOST = "peer_lost"
+    NETWORK_STARTED = "network_started"
+    NETWORK_STOPPED = "network_stopped"
+
 
 # ============================================================================
 # EVENT DATA

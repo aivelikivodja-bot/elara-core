@@ -382,6 +382,21 @@ class ElaraPaths:
         return self._root / "elara-dag.sqlite"
 
     # ------------------------------------------------------------------
+    # Layer 2 Network
+    # ------------------------------------------------------------------
+    @property
+    def network_config(self) -> Path:
+        return self._root / "elara-network.json"
+
+    @property
+    def network_peers(self) -> Path:
+        return self._root / "elara-peers.json"
+
+    @property
+    def attestations_db(self) -> Path:
+        return self._root / "elara-attestations.sqlite"
+
+    # ------------------------------------------------------------------
     # Workflows (learned action sequences)
     # ------------------------------------------------------------------
     @property
