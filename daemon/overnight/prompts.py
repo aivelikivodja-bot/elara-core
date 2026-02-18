@@ -31,7 +31,7 @@ need current information you don't have.
 """
 
 # ============================================================================
-# EXPLORATORY PHASES — 14 themed rounds (8 original + 4 3D cognition + 2 self)
+# EXPLORATORY PHASES — 15 themed rounds (8 original + 5 3D cognition + 2 self)
 # ============================================================================
 
 EXPLORATORY_PHASES = [
