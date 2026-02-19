@@ -116,6 +116,29 @@ def gather_context() -> dict:
         except (json.JSONDecodeError, OSError):
             pass
 
+    # Core identity facts from semantic memory
+    try:
+        sys.path.insert(0, str(Path("/home/neboo/elara-core")))
+        os.environ.setdefault("ELARA_DATA_DIR", str(DATA_DIR))
+        from memory.vector import recall
+        # Identity query
+        identity_results = recall("user name identity who is the user", n_results=3, mood_weight=0)
+        if identity_results:
+            facts = [r["content"][:120] for r in identity_results if r.get("relevance", 0) > 0.25]
+            if facts:
+                ctx["core_identity"] = "\n".join(facts)
+        # Recent decisions
+        decision_results = recall("recent decision made today", n_results=3, mood_weight=0)
+        if decision_results:
+            decisions = [
+                r["content"][:120] for r in decision_results
+                if r.get("type") == "decision" and r.get("relevance", 0) > 0.25
+            ]
+            if decisions:
+                ctx["recent_decisions"] = "\n".join(decisions[:3])
+    except Exception:
+        pass  # ChromaDB not available — skip identity section
+
     return ctx
 
 
@@ -142,7 +165,9 @@ Below is raw data from Elara's state files. Condense everything into a SINGLE br
 RULES:
 - Maximum 80 lines
 - Start with current time and session number
+- FIRST SECTION must be "### User Identity" with the user's name and key facts from core_identity
 - Include: what happened last session, current emotional state, immediate priorities, pending items from handoff, any overnight findings worth noting
+- If recent_decisions are provided, include a "### Recent Decisions" section
 - Preserve specific details: names, numbers, deadlines, file paths, version numbers
 - Tone: direct, no fluff
 - If handoff has items carried 3+ times, flag them as OVERDUE

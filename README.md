@@ -10,7 +10,7 @@
 
 Elara Core is the **Layer 3 reference implementation** of the [Elara Protocol](https://github.com/navigatorbuilds/elara-protocol) — a post-quantum universal validation layer for digital work. Where Layers 1 and 1.5 handle cryptographic signing and validation, and Layer 2 handles network consensus, **Layer 3 provides the intelligence**: persistent memory, emotional modeling, autonomous reasoning, and cognitive output that feeds back into the protocol's cryptographic proof chain.
 
-**45 tools. 15 modules. 31K+ lines of Python. Everything runs locally.** Delivered via [Model Context Protocol (MCP)](https://modelcontextprotocol.io).
+**45 tools. 15 modules. 32K+ lines of Python. Everything runs locally.** Delivered via [Model Context Protocol (MCP)](https://modelcontextprotocol.io).
 
 ```
 The Elara Protocol Stack:
@@ -222,6 +222,12 @@ That's the core loop: **remember → recall → track → reflect**.
 └────────────────────┬────────────────────────────┘
                      │ MCP Protocol (stdio)
 ┌────────────────────▼────────────────────────────┐
+│              hooks/ (hippocampus)                  │
+│                                                  │
+│  Intention resolver · Rolling message buffer     │
+│  Semantic recall · Compound queries · Dedup      │
+│  Frustration detection · Context injection       │
+├──────────────────────────────────────────────────┤
 │              elara_mcp/tools/                     │
 │                                                  │
 │  Memory · Mood · Episodes · Goals · Awareness    │
@@ -240,7 +246,7 @@ That's the core loop: **remember → recall → track → reflect**.
 ┌────────────────────▼────────────────────────────┐
 │           ~/.elara/ (all local)                   │
 │                                                  │
-│  ChromaDB (9 collections) · JSON state files     │
+│  ChromaDB (14 collections) · JSON state files    │
 │  Overnight findings · Creative journal           │
 └─────────────────────────────────────────────────┘
 ```
