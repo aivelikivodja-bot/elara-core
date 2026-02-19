@@ -23,14 +23,16 @@ class NetworkServer:
         GET  /status      — node identity and DAG info
     """
 
-    def __init__(self, identity, dag, port: int = 9473, attestations_db=None):
+    def __init__(self, identity, dag, port: int = 9473, attestations_db=None, node_type: str = "leaf"):
         self._identity = identity
         self._dag = dag
         self._port = port
         self._attestations_db = attestations_db
+        self._node_type = node_type
         self._app = None
         self._runner = None
         self._witness_manager = None
+        self._rate_limiter = None
 
     async def start(self) -> None:
         """Start the aiohttp server."""
@@ -43,11 +45,16 @@ class NetworkServer:
         from network.witness import WitnessManager
         self._witness_manager = WitnessManager(db_path=self._attestations_db)
 
+        from network.ratelimit import PeerRateLimiter
+        self._rate_limiter = PeerRateLimiter()
+
         self._app = web.Application()
         self._app.router.add_post("/records", self._handle_submit_record)
         self._app.router.add_get("/records", self._handle_query_records)
         self._app.router.add_post("/witness", self._handle_witness)
         self._app.router.add_get("/status", self._handle_status)
+        self._app.router.add_get("/ping", self._handle_ping)
+        self._app.router.add_get("/attestations", self._handle_attestations)
 
         self._runner = web.AppRunner(self._app)
         await self._runner.setup()
@@ -73,9 +80,23 @@ class NetworkServer:
             self._app = None
             logger.info("Network server stopped")
 
+    def _check_rate_limit(self, request) -> bool:
+        """Check if request is rate-limited. Returns True if allowed."""
+        if not self._rate_limiter:
+            return True
+        peer_ip = request.remote or "unknown"
+        return self._rate_limiter.allow(peer_ip)
+
     async def _handle_submit_record(self, request) -> "web.Response":
         """POST /records — receive and validate a remote record."""
         from aiohttp import web
+
+        if not self._check_rate_limit(request):
+            from daemon.events import bus, Events
+            bus.emit(Events.PEER_RATE_LIMITED, {
+                "peer_ip": request.remote, "endpoint": "/records",
+            }, source="network.server")
+            return web.json_response({"error": "rate limited"}, status=429)
 
         try:
             body = await request.read()
@@ -149,6 +170,13 @@ class NetworkServer:
         """POST /witness — counter-sign a record with local identity."""
         from aiohttp import web
 
+        if not self._check_rate_limit(request):
+            from daemon.events import bus, Events
+            bus.emit(Events.PEER_RATE_LIMITED, {
+                "peer_ip": request.remote, "endpoint": "/witness",
+            }, source="network.server")
+            return web.json_response({"error": "rate limited"}, status=429)
+
         try:
             body = await request.read()
             if not body:
@@ -207,4 +235,33 @@ class NetworkServer:
             "entity_type": self._identity.entity_type.name,
             "dag_records": stats.get("total_records", 0),
             "port": self._port,
+            "public_key": self._identity.public_key.hex(),
+            "node_type": self._node_type,
+        })
+
+    async def _handle_ping(self, request) -> "web.Response":
+        """GET /ping — heartbeat endpoint."""
+        from aiohttp import web
+        return web.json_response({
+            "pong": True,
+            "identity": self._identity.identity_hash,
+            "timestamp": time.time(),
+        })
+
+    async def _handle_attestations(self, request) -> "web.Response":
+        """GET /attestations?record_id=<id> — query attestations for a record."""
+        from aiohttp import web
+
+        record_id = request.query.get("record_id", "")
+        if not record_id:
+            return web.json_response({"error": "record_id required"}, status=400)
+
+        if not self._witness_manager:
+            return web.json_response({"attestations": [], "count": 0})
+
+        attestations = self._witness_manager.get_attestations(record_id)
+        return web.json_response({
+            "record_id": record_id,
+            "attestations": [a.to_dict() for a in attestations],
+            "count": len(attestations),
         })

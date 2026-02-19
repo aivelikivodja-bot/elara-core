@@ -58,13 +58,31 @@ class NetworkClient:
             logger.error("Failed to query records from %s:%d — %s", host, port, e)
             return []
 
-    async def request_witness(self, host: str, port: int, wire_bytes: bytes) -> dict:
-        """Request a witness attestation from a remote node."""
+    async def request_witness(
+        self, host: str, port: int, wire_bytes: bytes,
+        verify_key: Optional[bytes] = None, signable: Optional[bytes] = None,
+    ) -> dict:
+        """Request a witness attestation from a remote node.
+
+        Args:
+            verify_key: If provided, verify the witness signature before returning.
+            signable: The signable bytes of the record (needed for verification).
+        """
         session = await self._get_session()
         url = f"http://{host}:{port}/witness"
         try:
             async with session.post(url, data=wire_bytes) as resp:
-                return await resp.json()
+                result = await resp.json()
+
+            # Optionally verify the witness signature
+            if verify_key and signable and "signature" in result:
+                from network.types import WitnessAttestation
+                sig_bytes = bytes.fromhex(result["signature"])
+                if not WitnessAttestation.verify(signable, sig_bytes, verify_key):
+                    return {"error": "witness signature verification failed"}
+                result["verified"] = True
+
+            return result
         except Exception as e:
             logger.error("Failed to request witness from %s:%d — %s", host, port, e)
             return {"error": str(e)}
@@ -79,3 +97,31 @@ class NetworkClient:
         except Exception as e:
             logger.error("Failed to get status from %s:%d — %s", host, port, e)
             return {"error": str(e)}
+
+    async def ping(self, host: str, port: int) -> Optional[float]:
+        """Ping a remote node. Returns RTT in seconds, or None on failure."""
+        import time
+        session = await self._get_session()
+        url = f"http://{host}:{port}/ping"
+        try:
+            t0 = time.monotonic()
+            async with session.get(url) as resp:
+                data = await resp.json()
+                if data.get("pong"):
+                    return time.monotonic() - t0
+            return None
+        except Exception:
+            return None
+
+    async def query_attestations(self, host: str, port: int, record_id: str) -> List[dict]:
+        """Query attestations for a record from a remote node."""
+        session = await self._get_session()
+        url = f"http://{host}:{port}/attestations"
+        params = {"record_id": record_id}
+        try:
+            async with session.get(url, params=params) as resp:
+                data = await resp.json()
+                return data.get("attestations", [])
+        except Exception as e:
+            logger.error("Failed to query attestations from %s:%d — %s", host, port, e)
+            return []

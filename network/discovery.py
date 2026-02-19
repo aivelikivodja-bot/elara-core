@@ -27,9 +27,11 @@ class PeerDiscovery:
     WAN/cloud deployments.
     """
 
-    def __init__(self, identity_hash: str, port: int, peers_file: Optional[Path] = None):
+    def __init__(self, identity_hash: str, port: int, peers_file: Optional[Path] = None,
+                 node_type: NodeType = NodeType.LEAF):
         self._identity_hash = identity_hash
         self._port = port
+        self._node_type = node_type
         self._peers: Dict[str, PeerInfo] = {}
         self._peers_file = peers_file
         self._zeroconf = None
@@ -77,7 +79,7 @@ class PeerDiscovery:
                 port=self._port,
                 properties={
                     b"identity": self._identity_hash.encode(),
-                    b"node_type": b"leaf",
+                    b"node_type": self._node_type.value.encode(),
                 },
             )
             self._zeroconf.register_service(self._service_info)
@@ -213,6 +215,54 @@ class PeerDiscovery:
         self._peers[identity] = peer
         return peer
 
+    async def cache_public_key(self, client, peer: PeerInfo) -> None:
+        """Fetch public key from peer's /status and cache it."""
+        if peer.public_key:
+            return
+        try:
+            status = await client.get_status(peer.host, peer.port)
+            pk_hex = status.get("public_key", "")
+            if pk_hex:
+                peer.public_key = bytes.fromhex(pk_hex)
+        except Exception:
+            pass
+
+    async def heartbeat_once(self, client) -> dict:
+        """Ping all connected peers. Returns {identity: rtt_or_none}."""
+        results = {}
+        for peer in list(self._peers.values()):
+            if peer.state == PeerState.STALE:
+                continue
+            rtt = await client.ping(peer.host, peer.port)
+            results[peer.identity_hash] = rtt
+            if rtt is not None:
+                peer.last_seen = time.time()
+                peer.heartbeat_failures = 0
+                if peer.state == PeerState.DISCOVERED:
+                    peer.state = PeerState.CONNECTED
+            else:
+                peer.heartbeat_failures += 1
+                if peer.heartbeat_failures >= 2:
+                    peer.state = PeerState.STALE
+                    logger.info("Peer %s marked STALE after %d heartbeat failures",
+                                peer.identity_hash[:12], peer.heartbeat_failures)
+                    try:
+                        from daemon.events import bus, Events
+                        bus.emit(Events.PEER_LOST, {
+                            "identity_hash": peer.identity_hash,
+                            "reason": "heartbeat_timeout",
+                        }, source="network.discovery")
+                    except Exception:
+                        pass
+        return results
+
+    async def run_heartbeat_loop(self, client, interval: float = 30.0) -> None:
+        """Continuously ping peers at interval. Runs forever (use as asyncio task)."""
+        import asyncio
+        while self._running:
+            await self.heartbeat_once(client)
+            await asyncio.sleep(interval)
+
     def stats(self) -> dict:
         return {
             "running": self._running,
@@ -220,4 +270,5 @@ class PeerDiscovery:
             "total_peers": len(self._peers),
             "connected": len(self.connected_peers),
             "stale": len([p for p in self.peers if p.state == PeerState.STALE]),
+            "node_type": self._node_type.value,
         }

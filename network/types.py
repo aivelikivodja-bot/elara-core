@@ -33,12 +33,14 @@ class PeerInfo:
     state: PeerState = PeerState.DISCOVERED
     last_seen: float = 0.0
     records_exchanged: int = 0
+    public_key: Optional[bytes] = None
+    heartbeat_failures: int = 0
 
     def address(self) -> str:
         return f"{self.host}:{self.port}"
 
     def to_dict(self) -> dict:
-        return {
+        d = {
             "identity_hash": self.identity_hash,
             "host": self.host,
             "port": self.port,
@@ -47,6 +49,9 @@ class PeerInfo:
             "last_seen": self.last_seen,
             "records_exchanged": self.records_exchanged,
         }
+        if self.public_key:
+            d["public_key"] = self.public_key.hex()
+        return d
 
 
 @dataclass
@@ -64,3 +69,18 @@ class WitnessAttestation:
             "witness_signature": self.witness_signature.hex(),
             "timestamp": self.timestamp,
         }
+
+    @staticmethod
+    def verify(signable: bytes, signature: bytes, public_key: bytes) -> bool:
+        """Verify a witness counter-signature using Dilithium3.
+
+        Returns True if valid, False if invalid or liboqs unavailable.
+        """
+        try:
+            import oqs
+            verifier = oqs.Signature("Dilithium3")
+            return verifier.verify(signable, signature, public_key)
+        except ImportError:
+            return False
+        except Exception:
+            return False

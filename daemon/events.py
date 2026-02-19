@@ -132,8 +132,10 @@ class Events:
     # --- Layer 2 Network ---
     RECORD_RECEIVED = "record_received"
     RECORD_WITNESSED = "record_witnessed"
+    ATTESTATION_VERIFIED = "attestation_verified"
     PEER_DISCOVERED = "peer_discovered"
     PEER_LOST = "peer_lost"
+    PEER_RATE_LIMITED = "peer_rate_limited"
     NETWORK_STARTED = "network_started"
     NETWORK_STOPPED = "network_stopped"
 

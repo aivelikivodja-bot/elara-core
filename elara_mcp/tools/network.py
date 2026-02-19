@@ -26,16 +26,17 @@ def elara_network(
 
     Args:
         action: What to do:
-            "status"   — Network status: running, peers, server port
-            "peers"    — List discovered peers
-            "start"    — Start network (discovery + server)
-            "stop"     — Stop network
-            "push"     — Push recent records to a peer (needs host, port)
-            "sync"     — Pull records from a peer (needs host, port)
-            "witness"  — Request witness from a peer for a record (needs host, port, record_id)
-        host: Peer hostname/IP (for push, sync, witness)
-        port: Peer port (for push, sync, witness)
-        record_id: Record ID (for witness)
+            "status"       — Network status: running, peers, server port
+            "peers"        — List discovered peers
+            "start"        — Start network (discovery + server)
+            "stop"         — Stop network
+            "push"         — Push recent records to a peer (needs host, port)
+            "sync"         — Pull records from a peer (needs host, port)
+            "witness"      — Request witness from a peer for a record (needs host, port, record_id)
+            "attestations" — Query attestations for a record from a peer (needs host, port, record_id)
+        host: Peer hostname/IP (for push, sync, witness, attestations)
+        port: Peer port (for push, sync, witness, attestations)
+        record_id: Record ID (for witness, attestations)
         limit: Max records for sync (default 20)
 
     Returns:
@@ -61,7 +62,11 @@ def elara_network(
         if not host or not port or not record_id:
             return "Error: host, port, and record_id required for witness."
         return _witness(host, port, record_id)
-    return f"Unknown action: {action}. Use: status, peers, start, stop, push, sync, witness"
+    if action == "attestations":
+        if not host or not port or not record_id:
+            return "Error: host, port, and record_id required for attestations."
+        return _attestations(host, port, record_id)
+    return f"Unknown action: {action}. Use: status, peers, start, stop, push, sync, witness, attestations"
 
 
 # ---------------------------------------------------------------------------
@@ -134,13 +139,21 @@ def _start() -> str:
 
     paths = get_paths()
     net_port = int(os.environ.get("ELARA_NETWORK_PORT", "9473"))
+    node_type_str = os.environ.get("ELARA_NODE_TYPE", "leaf")
 
     # Start discovery
     from network.discovery import PeerDiscovery
+    from network.types import NodeType
+    try:
+        node_type = NodeType(node_type_str)
+    except ValueError:
+        node_type = NodeType.LEAF
+
     _discovery = PeerDiscovery(
         identity_hash=bridge._identity.identity_hash,
         port=net_port,
         peers_file=paths.network_peers,
+        node_type=node_type,
     )
     _discovery.start()
 
@@ -149,11 +162,11 @@ def _start() -> str:
     import threading
     from network.server import NetworkServer
 
-    from core.paths import get_paths
     _paths = get_paths()
     _server = NetworkServer(
         bridge._identity, bridge._dag, port=net_port,
         attestations_db=_paths.attestations_db,
+        node_type=node_type_str,
     )
 
     def _run_server():
@@ -274,6 +287,38 @@ def _sync(host: str, port: int, limit: int) -> str:
         return asyncio.run(_do_sync())
     except Exception as e:
         return f"Sync failed: {e}"
+
+
+def _attestations(host: str, port: int, record_id: str) -> str:
+    """Query attestations for a record from a remote node."""
+    import asyncio
+    from network.client import NetworkClient
+
+    async def _do_query():
+        client = NetworkClient()
+        attestations = await client.query_attestations(host, port, record_id)
+        await client.close()
+
+        if not attestations:
+            return f"No attestations for record {record_id[:12]}... on {host}:{port}"
+
+        lines = [f"{len(attestations)} attestation(s) for {record_id[:12]}...:"]
+        for a in attestations:
+            witness = a.get("witness_identity_hash", "?")[:16]
+            ts = a.get("timestamp", 0)
+            lines.append(f"  {witness}... at {ts:.0f}")
+        return "\n".join(lines)
+
+    try:
+        loop = asyncio.get_event_loop()
+        if loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                result = pool.submit(asyncio.run, _do_query()).result()
+            return result
+        return asyncio.run(_do_query())
+    except Exception as e:
+        return f"Query attestations failed: {e}"
 
 
 def _witness(host: str, port: int, record_id: str) -> str:
