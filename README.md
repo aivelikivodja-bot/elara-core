@@ -18,7 +18,7 @@ Layer 2   — Decentralized network (Adaptive Witness Consensus, peer discovery,
 Layer 3   — AI cognition (THIS REPO) — memory, mood, reasoning, awareness
 ```
 
-**45 tools. 15 modules. 34K+ lines of Python. 145 tests. Everything runs locally.** Cognitive outputs are dual-signed and stored in the cryptographic DAG. Pattern recognition feeds back into the validation chain.
+**45 tools. 15 modules. 36K+ lines of Python. 222 tests. Everything runs locally.** Cognitive outputs are dual-signed and stored in the cryptographic DAG. Pattern recognition feeds back into the validation chain.
 
 ```
 You: "Morning."
@@ -58,8 +58,9 @@ Elara Core is the cognitive layer (Layer 3). It provides persistent intelligence
 | Feature | What it does |
 |---------|-------------|
 | **Semantic memory** | Store and search by meaning, not keywords. "What were we doing last week?" just works. |
+| **Long-range memory** | Temporal sweep across time windows at boot — surfaces important items from weeks or months ago, plus landmark memories that never fade. |
 | **Mood system** | Tracks valence, energy, openness. Decays naturally between sessions. |
-| **Session tracking** | Episodes with milestones, decisions, and project tagging. |
+| **Session tracking** | Episodes with milestones, decisions, project tagging, and timeline view. |
 | **Goals & corrections** | Persistent goals with staleness detection. Mistakes saved and surfaced before you repeat them. |
 | **Session handoff** | Structured carry-forward between sessions so nothing gets lost. |
 
@@ -70,6 +71,7 @@ Elara Core is the cognitive layer (Layer 3). It provides persistent intelligence
 | **3D Cognition** | Persistent models (understanding), predictions (foresight), principles (wisdom), and workflow patterns (action) that accumulate over time. |
 | **Workflow Patterns** | Learned action sequences from episode history, proactively surfaced when a known trigger is detected mid-session. |
 | **Knowledge Graph** | Document cross-referencing with 6-tuple addressing, SQLite + ChromaDB, 4 validators for contradiction detection. |
+| **Cortical execution** | 5-layer concurrent architecture (Reflex → Reactive → Deliberative → Contemplative → Social). Hot cache, async event bus, worker pools — concurrent tool calls don't block each other. |
 | **Overnight thinking** | Autonomous analysis between sessions — runs 15 phases through a local LLM, builds cognitive models, detects workflow patterns, makes predictions. |
 | **Creative drift** | The overnight brain's imagination — random context collisions at high temperature. Writes to an accumulating creative journal. |
 | **Dream mode** | Weekly/monthly pattern discovery across sessions, inspired by sleep consolidation. |
@@ -135,13 +137,22 @@ Elara Core is the cognitive layer (Layer 3). It provides persistent intelligence
 │  Intention resolver · Rolling message buffer     │
 │  Semantic recall · Compound queries · Dedup      │
 │  Frustration detection · Context injection       │
+│  Long-range temporal sweep · Landmark recall     │
 ├──────────────────────────────────────────────────┤
-│              elara_mcp/tools/                     │
+│              Cortical Execution Model             │
+│                                                  │
+│  L0 REFLEX     — Hot cache, instant reads        │
+│  L1 REACTIVE   — Async event bus, cascading fx   │
+│  L2 DELIBERATE — IO pool (4) + LLM pool (2)     │
+│  L3 CONTEMPLATE — Overnight brain, dreams        │
+│  L4 SOCIAL     — Peer network, witness consensus │
+├──────────────────────────────────────────────────┤
+│              elara_mcp/tools/ (45 tools)          │
 │                                                  │
 │  Memory · Mood · Episodes · Goals · Awareness    │
 │  Dreams · Cognitive · 3D Cognition · Workflows   │
 │  Knowledge · Business · LLM · Gmail · Maintenance│
-│  Network                    (45 tools)            │
+│  Network                                          │
 └────────────────────┬────────────────────────────┘
                      │
 ┌────────────────────▼────────────────────────────┐
@@ -207,7 +218,7 @@ The [Elara Protocol](https://github.com/navigatorbuilds/elara-protocol) is a pos
 | Document | Where |
 |----------|-------|
 | **Elara Protocol Whitepaper v0.4.1** | [GitHub](https://github.com/navigatorbuilds/elara-protocol) |
-| **Elara Core Whitepaper v1.3.7** | [GitHub](https://github.com/navigatorbuilds/elara-protocol) |
+| **Elara Core Whitepaper v1.4.0** | [GitHub](https://github.com/navigatorbuilds/elara-protocol) |
 | **US Provisional Patent** | Application No. 63/983,064 (Feb 14, 2026) |
 
 **What Layer 3 adds to the protocol:**
@@ -219,6 +230,10 @@ The [Elara Protocol](https://github.com/navigatorbuilds/elara-protocol) is a pos
 ---
 
 ## What's New
+
+**v0.13.0 — Cortical Execution Model + Long-Range Memory** — 5-layer concurrent architecture: hot cache (L0), async event bus (L1), worker pools (L2), brain events (L3), network consolidation (L4). All 45 tool handlers are now non-blocking. Plus temporal sweep at boot — surfaces important memories from weeks/months ago and landmark memories that never fade. Timeline view for milestones.
+
+**v0.12.0 — Testnet Hardening** — Witness signature verification (Dilithium3), peer rate limiting, attestation back-propagation, heartbeat protocol, weighted trust with temporal decay + diversity bonus, role enforcement.
 
 **v0.11.0 — Layer 2 Network + CLI Tools** — Minimum viable network: mDNS peer discovery, HTTP record exchange, witness attestation, trust scoring. CLI: `elara sign/verify/identity/dag`. Bridge hardened with validation guards, dedup (10K cache), and rate limiting (120/min).
 

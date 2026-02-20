@@ -2,6 +2,35 @@
 
 All notable changes to Elara Core.
 
+## [0.13.0] — 2026-02-20
+
+### Added — Cortical Execution Model + Long-Range Memory
+- **Cortical Execution Model** — 5-layer concurrent architecture for non-blocking tool dispatch
+  - Layer 0 REFLEX: TTL-based hot cache with event-driven invalidation (`daemon/cache.py`)
+  - Layer 1 REACTIVE: Dual-mode async event bus with recursion guard (`daemon/events.py` rewrite)
+  - Layer 2 DELIBERATIVE: IO pool (4 threads) + LLM pool (2 threads) with backpressure (`daemon/workers.py`)
+  - Layer 3 CONTEMPLATIVE: Brain events (BRAIN_THINKING_STARTED/COMPLETED) + cache invalidation
+  - Layer 4 SOCIAL: Network ops consolidated onto MCP event loop
+  - Async reactive processors (`daemon/reactive.py`) — context tracking, correction matching, mood-congruent updates
+- **Async tool dispatch** — All 45 tool handlers automatically wrapped in `async def` + `run_in_executor`
+- **Long-range memory** (`memory/temporal.py`) — Temporal sweep across 4 time windows (1-2 weeks, 2-4 weeks, 1-3 months, 3+ months)
+- **Landmark memories** — Importance >= 0.9 tagged as landmarks, always surface at boot regardless of age
+- **Boot temporal context** — Long-range memory digest injected at boot via `hooks/boot.py`
+- **Timeline view** — `elara_episode_query(query="timeline")` shows top milestones across all time, grouped by month
+- **77 new tests** across 5 test files (test_cache, test_async_tools, test_workers, test_reactive, test_temporal)
+
+### Changed
+- `elara_mcp/_app.py` — Tool decorator now wraps sync → async automatically via ThreadPoolExecutor
+- `elara_mcp/tools/meta.py` — `elara_do` is now `async def` with executor dispatch
+- `daemon/events.py` — Dual-mode bus: sync handlers inline, async handlers via `create_task()`
+- `daemon/state_core.py` — Threading lock on state load/save for concurrent safety
+- `daemon/mood.py` — Cache integration for `get_mood()`
+- `daemon/presence.py` — Cache integration for `get_stats()`
+- `daemon/overnight/scheduler.py` — Emits brain events
+- `elara_mcp/tools/network.py` — Simplified async ops (no manual threading hacks)
+- 2 new events: `BRAIN_THINKING_STARTED`, `BRAIN_THINKING_COMPLETED`
+- 222 total tests (was 145)
+
 ## [0.12.0] — 2026-02-18
 
 ### Added — Layer 2 Testnet + Witness Persistence
