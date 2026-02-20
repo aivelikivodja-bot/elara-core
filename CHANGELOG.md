@@ -2,6 +2,47 @@
 
 All notable changes to Elara Core.
 
+## [0.15.0] — 2026-02-21
+
+### Added — Tier System + Cognitive Continuity Chain
+- **Tier system** (`core/tiers.py`) — 4 hardware deployment levels controlling which modules load at runtime
+  - Tier 0 VALIDATE: Crypto + DAG only (IoT, embedded sensors, microcontrollers)
+  - Tier 1 REMEMBER: + memory, episodes, goals, maintenance ($30 phones, low-RAM)
+  - Tier 2 THINK: + mood, awareness, dreams, cognitive, cognition_3d, workflows, knowledge, business, llm, gmail (DEFAULT)
+  - Tier 3 CONNECT: + network (full mesh participation)
+  - API: `set_tier()`, `get_tier()`, `tier_permits()`, `get_permitted_modules()`, `tier_name()`
+  - CLI: `elara serve --tier {0,1,2,3}` + `ELARA_TIER` env var
+  - Wizard: new Step 5 for tier selection
+- **Cognitive Continuity Chain** (`core/continuity.py`) — cryptographic proof of unbroken AI cognitive experience
+  - Hash-chained, dual-signed (Dilithium3 + SPHINCS+) cognitive state snapshots in the DAG
+  - CognitiveDigest captures: mood vector, memory/model/prediction/principle/correction counts, active goals, session count, allostatic load
+  - Automatic checkpoints on 6 trigger events (session end, principle crystallized, model created, dream completed, brain thinking completed, significant mood change)
+  - Rate limited: max 1 checkpoint per 5 minutes
+  - Chain verification: `verify_chain()` walks DAG backwards, verifies parent links + signatures
+  - CLI: `elara continuity status` + `elara continuity verify`
+- **New events**: `TIER_CHANGED`, `CONTINUITY_CHECKPOINT`
+- **New path**: `continuity_file` in `core/paths.py`
+
+### Changed
+- **Server imports** now tier-gated — modules only load if `tier_permits(module_name)` returns True
+- Server prints tier info to stderr on startup: "Tier 2 (THINK) — 14 modules active"
+
+### Stats
+- 153 source files, ~37,400 lines Python, 222 tests, 45 MCP tools across 15 modules
+
+---
+
+## [0.14.0] — 2026-02-20
+
+### Added — One-Line Install + Every Install is a Node
+- Network node auto-starts with `elara serve` (background thread, non-blocking)
+- `--no-node` flag to disable network node
+- `--node-type` flag to override node type (leaf/relay/witness)
+- Version check on startup (background, non-blocking)
+- Network bootstrap with seed peers and config persistence
+
+---
+
 ## [0.13.0] — 2026-02-20
 
 ### Added — Cortical Execution Model + Long-Range Memory
