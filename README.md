@@ -42,7 +42,7 @@ Elara: "3 work sessions. Auth module shipped. Goal #4 is stalling —
 | **Layer 1.5** — Rust DAM VM | Done | [elara-runtime](https://github.com/navigatorbuilds/elara-runtime) |
 | **Layer 2** — Network consensus | In development | Included in this repo (`network/`) |
 | **Layer 3** — AI cognition | Done | This repo |
-| **Protocol specs** | v0.4.0 | [elara-protocol](https://github.com/navigatorbuilds/elara-protocol) |
+| **Protocol specs** | v0.4.1 | [elara-protocol](https://github.com/navigatorbuilds/elara-protocol) |
 | **US Provisional Patent** | Filed | Application No. 63/983,064 (Feb 14, 2026) |
 
 The full stack — where nodes run, records are witnessed across the network, and cognitive artifacts are cryptographically validated — is not yet packaged for public use. When it is, there will be a single install path for the complete system.
