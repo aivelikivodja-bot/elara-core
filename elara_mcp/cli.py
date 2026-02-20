@@ -3,16 +3,21 @@
 # See LICENSE file in the project root for full license text.
 
 """
-Elara CLI — bootstrap, run MCP server, and Layer 1 crypto operations.
+Elara CLI — bootstrap, run MCP server, network node, and Layer 1 crypto.
 
 Usage:
     elara init                     Interactive setup wizard
     elara init --yes               Non-interactive init (CI/scripts)
     elara init --force             Reinitialize existing setup
     elara doctor                   Diagnostic health check
-    elara serve                    Start MCP server (stdio, lean profile)
+    elara serve                    Start MCP server + network node (stdio)
+    elara serve --no-node          Start MCP server without network node
     elara serve --profile full     Start with all 45 tool schemas
     elara serve --profile lean     Start with 7 core + elara_do (default)
+    elara node status              Show node info (type, port, peers)
+    elara node peers               List connected peers
+    elara node start               Enable network node
+    elara node stop                Disable network node
     elara sign <file>              Sign a file with Dilithium3+SPHINCS+
     elara verify <proof>           Verify an .elara.proof file
     elara identity                 Show identity info
@@ -41,11 +46,30 @@ def _doctor(data_dir: Path) -> None:
     run_doctor(data_dir)
 
 
-def _serve(data_dir: Path, profile: str = "lean") -> None:
-    """Start the MCP server over stdio."""
+def _serve(data_dir: Path, profile: str = "lean", no_node: bool = False) -> None:
+    """Start the MCP server over stdio, optionally with network node."""
+    import os
+    import threading
     from core.paths import configure
 
-    configure(data_dir)
+    paths = configure(data_dir)
+
+    # Version check (non-blocking, background thread)
+    def _check_version():
+        try:
+            from network.bootstrap import check_version_async
+            msg = check_version_async()
+            if msg:
+                # Print to stderr so it doesn't interfere with MCP stdio
+                print(msg, file=sys.stderr)
+        except Exception:
+            pass
+
+    threading.Thread(target=_check_version, daemon=True, name="elara-version-check").start()
+
+    # Start network node unless --no-node
+    if not no_node:
+        _maybe_start_node(paths, sys.stderr)
 
     # Set profile BEFORE importing server (which imports tool modules)
     from elara_mcp._app import set_profile
@@ -53,6 +77,260 @@ def _serve(data_dir: Path, profile: str = "lean") -> None:
 
     from elara_mcp.server import mcp
     mcp.run()
+
+
+def _maybe_start_node(paths, log_file=None) -> bool:
+    """Start network node if enabled in config. Returns True if started.
+
+    Runs in a background thread — never blocks MCP startup.
+    """
+    import os
+    import threading
+
+    try:
+        from network.bootstrap import load_network_config
+        config = load_network_config(paths.network_config)
+    except Exception:
+        config = {"enabled": True, "node_type": "leaf", "port": 0, "seed_nodes": []}
+
+    if not config.get("enabled", True):
+        return False
+
+    def _start_node():
+        try:
+            _do_start_node(paths, config, log_file)
+        except Exception as e:
+            if log_file:
+                print(f"Node startup failed (non-fatal): {e}", file=log_file)
+
+    thread = threading.Thread(target=_start_node, daemon=True, name="elara-node-startup")
+    thread.start()
+    return True
+
+
+def _do_start_node(paths, config: dict, log_file=None) -> None:
+    """Actually start the network node (runs in background thread)."""
+    import asyncio
+    import os
+
+    # Check if network deps are available
+    try:
+        from network.server import NetworkServer
+        from network.discovery import PeerDiscovery
+        from network.types import NodeType
+        from network.bootstrap import bootstrap_peers
+    except ImportError:
+        if log_file:
+            print("Network node disabled — install with: pip install elara-core[network]",
+                  file=log_file)
+        return
+
+    # Need Layer 1 identity
+    if not paths.identity_file.exists():
+        if log_file:
+            print("Network node skipped — no identity (run: elara init)", file=log_file)
+        return
+
+    try:
+        from elara_protocol.identity import Identity
+        from elara_protocol.dag import LocalDAG
+    except ImportError:
+        if log_file:
+            print("Network node skipped — elara-protocol not installed", file=log_file)
+        return
+
+    identity = Identity.load(paths.identity_file)
+
+    # Resolve port: config → env → 0 (random)
+    port = config.get("port", 0)
+    if not port:
+        port = int(os.environ.get("ELARA_NETWORK_PORT", "0"))
+    if not port:
+        # Find a free port
+        import socket
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.bind(("", 0))
+            port = s.getsockname()[1]
+
+    # Resolve node type
+    node_type_str = config.get("node_type", "leaf")
+    env_type = os.environ.get("ELARA_NODE_TYPE")
+    if env_type:
+        node_type_str = env_type
+    try:
+        node_type = NodeType(node_type_str)
+    except ValueError:
+        node_type = NodeType.LEAF
+
+    # Start discovery with bootstrapped peers
+    discovery = PeerDiscovery(
+        identity_hash=identity.identity_hash,
+        port=port,
+        peers_file=paths.network_peers,
+        node_type=node_type,
+    )
+
+    # Add seed peers from config/bootstrap
+    peers = bootstrap_peers(config, peers_file=paths.network_peers)
+    for peer in peers:
+        discovery.add_peer(
+            host=peer["host"],
+            port=peer["port"],
+            identity_hash=peer.get("identity_hash", ""),
+        )
+
+    discovery.start()
+
+    # Start HTTP server
+    dag = LocalDAG(paths.dag_file)
+    server = NetworkServer(
+        identity, dag, port=port,
+        attestations_db=paths.attestations_db,
+        node_type=node_type_str,
+    )
+
+    # Store references in the network tool module for CLI access
+    try:
+        from elara_mcp.tools import network as net_mod
+        net_mod._discovery = discovery
+        net_mod._server = server
+    except Exception:
+        pass
+
+    # Run server event loop
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+
+    try:
+        from elara_mcp.tools import network as net_mod
+        net_mod._server_loop = loop
+    except Exception:
+        pass
+
+    loop.run_until_complete(server.start())
+
+    peer_count = len(discovery.peers)
+    if log_file:
+        print(f"Node active: {node_type_str.upper()} on port {port} "
+              f"({peer_count} peer{'s' if peer_count != 1 else ''} discovered)",
+              file=log_file)
+
+    # Emit event
+    try:
+        from daemon.events import bus, Events
+        bus.emit(Events.NETWORK_STARTED, {
+            "port": port,
+            "node_type": node_type_str,
+            "peers": peer_count,
+        }, source="cli.serve")
+    except Exception:
+        pass
+
+    loop.run_forever()
+
+
+# ---------------------------------------------------------------------------
+# Node CLI subcommand
+# ---------------------------------------------------------------------------
+
+def _node_status(data_dir: Path) -> None:
+    """Show node status."""
+    from core.paths import configure
+    paths = configure(data_dir)
+
+    try:
+        from network.bootstrap import load_network_config
+        config = load_network_config(paths.network_config)
+    except Exception:
+        config = {"enabled": False}
+
+    enabled = config.get("enabled", False)
+    node_type = config.get("node_type", "leaf").upper()
+    port = config.get("port", 0) or "auto"
+
+    print(f"Node: {'enabled' if enabled else 'disabled'}")
+    print(f"  Type:       {node_type}")
+    print(f"  Port:       {port}")
+    print(f"  Config:     {paths.network_config}")
+
+    # Show seed nodes
+    seeds = config.get("seed_nodes", [])
+    if seeds:
+        print(f"  Seeds:      {len(seeds)}")
+        for s in seeds[:3]:
+            print(f"    {s.get('host', '?')}:{s.get('port', '?')}")
+
+    # Try to get live status from running server
+    try:
+        from elara_mcp.tools.network import _discovery, _server
+        if _server:
+            print(f"  Server:     running on port {_server._port}")
+        else:
+            print(f"  Server:     not running")
+        if _discovery:
+            stats = _discovery.stats()
+            print(f"  Discovery:  {'active' if stats['running'] else 'stopped'}")
+            print(f"  Peers:      {stats['total_peers']} total, {stats['connected']} connected")
+        else:
+            print(f"  Discovery:  not running")
+    except ImportError:
+        print(f"  Runtime:    network module not available (pip install elara-core[network])")
+
+
+def _node_peers(data_dir: Path) -> None:
+    """List connected peers."""
+    try:
+        from elara_mcp.tools.network import _discovery
+        if not _discovery:
+            print("Node not running. Start with: elara serve")
+            sys.exit(1)
+
+        peers = _discovery.peers
+        if not peers:
+            print("No peers discovered.")
+            return
+
+        print(f"{len(peers)} peer(s):")
+        for p in peers:
+            print(f"  {p.identity_hash[:16]}... [{p.state.value}] {p.host}:{p.port}")
+            if p.records_exchanged > 0:
+                print(f"    Records: {p.records_exchanged}")
+    except ImportError:
+        print("Network module not available. Install with: pip install elara-core[network]")
+        sys.exit(1)
+
+
+def _node_stop(data_dir: Path) -> None:
+    """Disable node (persists to config)."""
+    from core.paths import configure
+    paths = configure(data_dir)
+
+    try:
+        from network.bootstrap import load_network_config, save_network_config
+        config = load_network_config(paths.network_config)
+        config["enabled"] = False
+        save_network_config(paths.network_config, config)
+        print("Node disabled. Will not start on next elara serve.")
+        print("  Re-enable with: elara node start")
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
+
+
+def _node_start(data_dir: Path) -> None:
+    """Enable node (persists to config)."""
+    from core.paths import configure
+    paths = configure(data_dir)
+
+    try:
+        from network.bootstrap import load_network_config, save_network_config
+        config = load_network_config(paths.network_config)
+        config["enabled"] = True
+        save_network_config(paths.network_config, config)
+        print("Node enabled. Will start on next elara serve.")
+    except Exception as e:
+        print(f"Error: {e}")
+        sys.exit(1)
 
 
 # ---------------------------------------------------------------------------
@@ -324,6 +602,10 @@ def main() -> None:
         dest="top_data_dir",
         help="Override data directory (default: $ELARA_DATA_DIR or ~/.elara/)",
     )
+    parser.add_argument(
+        "--version", action="store_true",
+        help="Show version and exit",
+    )
 
     sub = parser.add_subparsers(dest="command")
 
@@ -346,6 +628,29 @@ def main() -> None:
                               help="Override data directory (default: $ELARA_DATA_DIR or ~/.elara/)")
     serve_parser.add_argument("--profile", choices=["lean", "full"], default=None,
                               help="Tool profile: lean (8 schemas, default) or full (all 39+1 schemas)")
+    serve_parser.add_argument("--no-node", action="store_true", dest="no_node",
+                              help="Don't start network node (default: node starts automatically)")
+    serve_parser.add_argument("--node-type", choices=["leaf", "relay", "witness"], default=None,
+                              dest="node_type",
+                              help="Override node type (default: from config)")
+
+    # node
+    node_parser = sub.add_parser("node", help="Network node management")
+    node_sub = node_parser.add_subparsers(dest="node_command")
+    node_status_p = node_sub.add_parser("status", help="Show node info")
+    node_status_p.add_argument("--data-dir", type=Path, default=None, dest="sub_data_dir",
+                               help="Override data directory")
+    node_peers_p = node_sub.add_parser("peers", help="List connected peers")
+    node_peers_p.add_argument("--data-dir", type=Path, default=None, dest="sub_data_dir",
+                              help="Override data directory")
+    node_stop_p = node_sub.add_parser("stop", help="Disable network node")
+    node_stop_p.add_argument("--data-dir", type=Path, default=None, dest="sub_data_dir",
+                             help="Override data directory")
+    node_start_p = node_sub.add_parser("start", help="Enable network node")
+    node_start_p.add_argument("--data-dir", type=Path, default=None, dest="sub_data_dir",
+                              help="Override data directory")
+    node_parser.add_argument("--data-dir", type=Path, default=None, dest="sub_data_dir",
+                             help="Override data directory")
 
     # sign
     sign_parser = sub.add_parser("sign", help="Sign a file with Layer 1 crypto")
@@ -386,6 +691,15 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    # --version
+    if getattr(args, "version", False):
+        try:
+            from importlib.metadata import version
+            print(f"elara-core {version('elara-core')}")
+        except Exception:
+            print("elara-core (version unknown — not installed via pip)")
+        sys.exit(0)
+
     # Resolve data dir: subcommand flag → top-level flag → env → default
     import os
     raw = getattr(args, "sub_data_dir", None) or getattr(args, "top_data_dir", None)
@@ -405,7 +719,25 @@ def main() -> None:
     elif args.command == "serve":
         # Resolve profile: CLI arg → env var → default "lean"
         profile = args.profile or os.environ.get("ELARA_PROFILE", "lean")
-        _serve(data_dir, profile=profile)
+
+        # Override node type in env if specified on CLI
+        if args.node_type:
+            os.environ["ELARA_NODE_TYPE"] = args.node_type
+
+        _serve(data_dir, profile=profile, no_node=args.no_node)
+    elif args.command == "node":
+        cmd = getattr(args, "node_command", None)
+        if cmd == "status":
+            _node_status(data_dir)
+        elif cmd == "peers":
+            _node_peers(data_dir)
+        elif cmd == "stop":
+            _node_stop(data_dir)
+        elif cmd == "start":
+            _node_start(data_dir)
+        else:
+            node_parser.print_help()
+            sys.exit(1)
     elif args.command == "sign":
         _sign(data_dir, args.file, args.classification)
     elif args.command == "verify":

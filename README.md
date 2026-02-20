@@ -8,7 +8,22 @@
 [![License](https://img.shields.io/badge/license-BSL--1.1-ff0040)](https://github.com/navigatorbuilds/elara-core/blob/main/LICENSE)
 [![Docs](https://img.shields.io/badge/docs-elara.navigatorbuilds.com-%23ffb000)](https://elara.navigatorbuilds.com)
 
-This is **one layer** of the [Elara Protocol](https://github.com/navigatorbuilds/elara-protocol) — a post-quantum universal validation layer for digital work. The full stack spans cryptographic signing, a Rust VM, decentralized network consensus, and this cognitive layer. **The full system is in active development and not yet ready for public deployment.**
+This is **one layer** of the [Elara Protocol](https://github.com/navigatorbuilds/elara-protocol) — a post-quantum universal validation layer for digital work. The full stack spans cryptographic signing, a Rust VM, decentralized network consensus, and this cognitive layer.
+
+### Install in one line
+
+```bash
+# Linux / macOS
+curl -sSL https://raw.githubusercontent.com/navigatorbuilds/elara-core/main/scripts/install.sh | sh
+
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/navigatorbuilds/elara-core/main/scripts/install.ps1 | iex
+
+# Or with pip / pipx
+pip install elara-core[network]
+```
+
+**Every install is a node.** When you run `elara serve`, your instance joins the Elara mesh network as a LEAF node — sharing anonymized validation records with other nodes. No personal data leaves your machine. Opt out anytime with `elara serve --no-node` or `elara node stop`.
 
 ```
 The Elara Protocol Stack:
@@ -16,6 +31,21 @@ Layer 1   — Post-quantum cryptography (Dilithium3 + SPHINCS+), DAG signing, of
 Layer 1.5 — Rust DAM Virtual Machine (PyO3 bindings, record processing)
 Layer 2   — Decentralized network (Adaptive Witness Consensus, peer discovery, trust scoring)
 Layer 3   — AI cognition (THIS REPO) — memory, mood, reasoning, awareness
+```
+
+```
+Network Topology:
+
+  ┌──────┐     ┌──────┐     ┌──────┐
+  │ LEAF │────▶│RELAY │◀────│ LEAF │    LEAF    = your install
+  └──┬───┘     └──┬───┘     └──┬───┘    RELAY   = seed/routing node
+     │            │            │         WITNESS = attestation authority
+     ▼            ▼            ▼
+  ┌──────────────────────────────┐
+  │         WITNESS NODES         │
+  │   Cross-sign validation       │
+  │   records across the mesh     │
+  └──────────────────────────────┘
 ```
 
 **45 tools. 15 modules. 36K+ lines of Python. 222 tests. Everything runs locally.** Cognitive outputs are dual-signed and stored in the cryptographic DAG. Pattern recognition feeds back into the validation chain.
@@ -40,12 +70,12 @@ Elara: "3 work sessions. Auth module shipped. Goal #4 is stalling —
 |-------|--------|------------|
 | **Layer 1** — Post-quantum crypto | Done | Private (pre-release) |
 | **Layer 1.5** — Rust DAM VM | Done | [elara-runtime](https://github.com/navigatorbuilds/elara-runtime) |
-| **Layer 2** — Network consensus | In development | Included in this repo (`network/`) |
+| **Layer 2** — Network consensus | Active (node-by-default) | Included in this repo (`network/`) |
 | **Layer 3** — AI cognition | Done | This repo |
 | **Protocol specs** | v0.4.1 | [elara-protocol](https://github.com/navigatorbuilds/elara-protocol) |
 | **US Provisional Patent** | Filed | Application No. 63/983,064 (Feb 14, 2026) |
 
-The full stack — where nodes run, records are witnessed across the network, and cognitive artifacts are cryptographically validated — is not yet packaged for public use. When it is, there will be a single install path for the complete system.
+Every install is a node. When you run `elara serve`, your instance participates in the decentralized mesh — sharing anonymized validation records, not personal data. The install scripts handle everything in one line.
 
 ---
 
@@ -185,18 +215,25 @@ pip install -e ".[dev]"
 pytest
 ```
 
-### CLI commands (for development)
+### CLI commands
 
 ```
 elara init                     Interactive setup wizard
 elara init --yes               Non-interactive init (CI/scripts)
 elara doctor                   Diagnostic health check
-elara serve                    Start MCP server (stdio)
+elara serve                    Start MCP server + network node (stdio)
+elara serve --no-node          Start MCP server without network
+elara serve --profile full     Start with all 45 tool schemas
+elara node status              Show node info (type, port, peers)
+elara node peers               List connected peers
+elara node stop                Disable network node
+elara node start               Enable network node
 elara sign <file>              Sign a file with Layer 1 crypto
 elara verify <proof>           Verify an .elara.proof file
 elara identity                 Show identity info
 elara dag stats                Show DAG statistics
 elara testnet                  Run Layer 2 testnet demo
+elara --version                Show version
 ```
 
 ---
@@ -230,6 +267,8 @@ The [Elara Protocol](https://github.com/navigatorbuilds/elara-protocol) is a pos
 ---
 
 ## What's New
+
+**v0.14.0 — One-Line Install + Every Install Is a Node** — One-line install scripts for Linux, macOS, and Windows. `elara serve` now automatically starts a LEAF network node (opt out with `--no-node`). New `elara node` subcommand for node management. Seed node bootstrap with GitHub peer list fallback. PyPI version check on startup. `elara --version` flag.
 
 **v0.13.0 — Cortical Execution Model + Long-Range Memory** — 5-layer concurrent architecture: hot cache (L0), async event bus (L1), worker pools (L2), brain events (L3), network consolidation (L4). All 45 tool handlers are now non-blocking. Plus temporal sweep at boot — surfaces important memories from weeks/months ago and landmark memories that never fade. Timeline view for milestones.
 

@@ -408,6 +408,19 @@ def _create_data_dir(data_dir: Path, force: bool) -> None:
         paths.corrections_file.write_text("[]")
 
 
+def _create_network_config(data_dir: Path, enabled: bool = True) -> None:
+    """Write default network config for the node."""
+    from network.bootstrap import DEFAULT_SEEDS, save_network_config
+    config = {
+        "enabled": enabled,
+        "node_type": "leaf",
+        "port": 0,
+        "seed_nodes": DEFAULT_SEEDS,
+    }
+    config_path = data_dir / "elara-network.json"
+    save_network_config(config_path, config)
+
+
 def _generate_persona(style: str, ai_name: str, user_name: str) -> str:
     """Generate persona text from a template."""
     template = PERSONAS.get(style, PERSONAS["colleague"])
@@ -434,7 +447,9 @@ def run_wizard(data_dir: Path, force: bool = False, yes: bool = False) -> None:
             print("Use --force to reinitialize.")
             return
         _create_data_dir(data_dir, force)
+        _create_network_config(data_dir, enabled=True)
         print(f"Elara initialized at {data_dir}")
+        print(f"  Network node: enabled (LEAF)")
         return
 
     # --- Interactive mode ---
@@ -500,9 +515,23 @@ def run_wizard(data_dir: Path, force: bool = False, yes: bool = False) -> None:
                     print(f"    claude mcp add elara -- elara serve")
     print()
 
-    # Step 5: Persona
+    # Step 5: Network node
+    print(bold("  Step 5:") + " Network node")
+    node_enable = _ask("  Enable network node? (Y/n)", "y")
+    node_enabled = node_enable.lower() != "n"
+    _create_network_config(data_dir, enabled=node_enabled)
+    if node_enabled:
+        print(f"  {green('✓')} Node enabled — your Elara instance will participate in the")
+        print(f"      decentralized validation mesh as a LEAF node.")
+        print(f"      It shares anonymized validation records with other nodes.")
+        print(f"      Disable anytime: " + bold("elara node stop"))
+    else:
+        print(f"  {dim('○')} Node disabled. Enable later with: " + bold("elara node start"))
+    print()
+
+    # Step 6: Persona
     if style != "skip":
-        print(bold("  Step 5:") + " Installing persona")
+        print(bold("  Step 6:") + " Installing persona")
         persona_text = _generate_persona(style, ai_name, user_name)
 
         target = Path.home() / ".claude" / "CLAUDE.md"
@@ -523,11 +552,11 @@ def run_wizard(data_dir: Path, force: bool = False, yes: bool = False) -> None:
                 print(f"  {red('✗')} Failed to write {target}")
         print()
     else:
-        print(bold("  Step 5:") + " Persona " + dim("skipped"))
+        print(bold("  Step 6:") + " Persona " + dim("skipped"))
         print()
 
-    # Step 6: Health check
-    print(bold("  Step 6:") + " Health check")
+    # Step 7: Health check
+    print(bold("  Step 7:") + " Health check")
     results = run_health_check(data_dir)
     passed = 0
     failed = 0
