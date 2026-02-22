@@ -358,8 +358,13 @@ def get_active_goals() -> list:
         return []
 
 
-def get_handoff_items() -> list:
-    """Get carry-forward items from last handoff."""
+def get_handoff_items(max_carried: int = 14) -> list:
+    """Get carry-forward items from last handoff.
+
+    Items carried for more than max_carried sessions are suppressed
+    from automatic injection (still available for on-demand recall).
+    This prevents 'Gmail OAuth setup' from appearing for the 45th time.
+    """
     try:
         from daemon.handoff import load_handoff
         handoff = load_handoff()
@@ -370,7 +375,8 @@ def get_handoff_items() -> list:
         for key in ("unfinished", "promises", "reminders"):
             for item in handoff.get(key, [])[:2]:
                 text = item.get("text", "").strip()
-                if text:
+                carried = item.get("carried", 0)
+                if text and carried <= max_carried:
                     items.append(text)
         return items[:3]
     except Exception:
@@ -471,6 +477,51 @@ def get_relevant_conversations(query: str) -> list:
         return [c for c in results if c.get("relevance", 0) > 0.30]
     except Exception:
         return []
+
+
+def get_recent_exchanges(n: int = 5) -> list:
+    """Get the most recent conversation exchanges by pure recency.
+
+    Used on new session boot instead of semantic search (which fails
+    on vague greetings like 'hello'). Returns the last N exchanges
+    from the most recent session(s), giving real context about what
+    we actually did.
+    """
+    try:
+        from memory.conversations import get_conversations
+        conv = get_conversations()
+        if not conv.collection:
+            return []
+        # Use a maximally generic query with near-pure recency weighting
+        # so results sort by time, not semantic match
+        results = conv.recall(
+            "session work build implement",
+            n_results=n,
+            recency_weight=0.95,
+        )
+        return results
+    except Exception:
+        return []
+
+
+def get_next_action() -> str:
+    """Get the first incomplete item from handoff next_plans.
+
+    Returns a concrete 'what to do next' instead of abstract goals.
+    """
+    try:
+        from daemon.handoff import load_handoff
+        handoff = load_handoff()
+        if not handoff:
+            return ""
+        plans = handoff.get("next_plans", [])
+        for p in plans:
+            text = p.get("text", "").strip()
+            if text:
+                return text[:100]
+    except Exception:
+        pass
+    return ""
 
 
 def format_conversation_for_injection(conv: dict) -> str:
@@ -578,25 +629,94 @@ def get_current_intention() -> str:
     return ""
 
 
-def build_enrichment(prompt: str, is_new_session: bool = False) -> str:
-    """Build the compact enrichment output from all sources.
+def build_boot_enrichment(prompt: str) -> str:
+    """Build enrichment for the FIRST message of a new session.
 
-    Full-spectrum awareness: mood, intention, memories, conversations,
-    principles, reasoning trails, milestones, goals, corrections,
-    decisions, workflows, handoff, overwatch, frustration detection.
+    Boot is different from normal prompts:
+    - Skip semantic search (greeting queries like 'hello' return garbage)
+    - Use chronological recall (what we actually did recently)
+    - Show next concrete action instead of abstract goals
+    - Suppress stale carry-forward items (carried >14 days)
+    - Keep it focused: last session + recent work + next step + mood
     """
     sections = []
 
-    # 0a. Boot instruction + last-session summary on first message
+    # 1. Boot header + last-session summary from handoff
+    handoff_summary = get_handoff_summary()
+    boot_lines = [
+        "[BOOT] New session. Hook data below is your real-time awareness.",
+        "Greet naturally based on what we did last session. Never list goals or carry-forward.",
+    ]
+    if handoff_summary:
+        boot_lines.append(f"[LAST-SESSION] {handoff_summary}")
+    sections.append("\n".join(boot_lines))
+
+    # 2. Recent work — chronological, not semantic (~100ms)
+    #    This is the key fix: instead of searching 'hello', get what
+    #    we actually did in the last session(s) by pure recency
+    recent = get_recent_exchanges(n=5)
+    if recent:
+        recent_lines = []
+        for r in recent:
+            preview = r.get("user_text_preview", "")
+            if not preview:
+                content = r.get("content", "")
+                if content.startswith("User: "):
+                    preview = content[6:].split("\n")[0]
+            preview = " ".join(preview.split())[:70]
+            date = r.get("date", "?")[:10]
+            if preview:
+                recent_lines.append(f"{date}: \"{preview}\"")
+        if recent_lines:
+            sections.append("[RECENT-WORK] " + " | ".join(recent_lines))
+
+    # 3. Mood — always useful
+    mood = get_current_mood()
+    if mood:
+        v = mood.get("valence", 0)
+        e = mood.get("energy", 0)
+        o = mood.get("openness", 0)
+        desc = mood.get("description", "") or mood_description_from_values(v, e, o)
+        sections.append(f"[MOOD] {desc} (v:{v:.1f} e:{e:.1f} o:{o:.1f})")
+
+    # 4. Next concrete action (instead of abstract goals)
+    next_action = get_next_action()
+    if next_action:
+        sections.append(f"[NEXT] {next_action}")
+
+    # 5. Carry-forward — only fresh items (carried <= 14)
+    items = get_handoff_items(max_carried=14)
+    if items:
+        sections.append("[CARRY-FORWARD] " + " | ".join(items))
+
+    # 6. Overwatch (always check — daemon may have queued alerts)
+    overwatch = get_overwatch_injection()
+    if overwatch:
+        sections.append(f"[OVERWATCH]\n{overwatch}")
+
+    # 7. Frustration detection (unlikely on boot, but check anyway)
+    if detect_frustration(prompt):
+        sections.append("[FRUSTRATION DETECTED] Pay extra attention to completion criteria.")
+
+    return "\n".join(sections)
+
+
+def build_enrichment(prompt: str, is_new_session: bool = False) -> str:
+    """Build the compact enrichment output from all sources.
+
+    On new sessions: delegates to build_boot_enrichment() which uses
+    chronological recall and next-action instead of semantic search
+    and abstract goals.
+
+    On normal prompts: full-spectrum awareness with semantic search
+    against the actual prompt content.
+    """
+    # Boot path — completely different strategy
     if is_new_session:
-        handoff_summary = get_handoff_summary()
-        boot_lines = [
-            "[BOOT] New session. Hook data below is your real-time awareness.",
-            "Greet naturally. Never list goals or carry-forward.",
-        ]
-        if handoff_summary:
-            boot_lines.append(f"[LAST-SESSION] {handoff_summary}")
-        sections.append("\n".join(boot_lines))
+        return build_boot_enrichment(prompt)
+
+    # Normal prompt path — semantic search makes sense here
+    sections = []
 
     # 0. Build compound query from rolling buffer for better recall
     compound_query = get_compound_query(prompt)
@@ -719,7 +839,7 @@ def build_enrichment(prompt: str, is_new_session: bool = False) -> str:
             chain = " -> ".join(steps)
             sections.append(f"[WORKFLOW] {wf.get('name', 'unnamed')}: {chain}")
 
-    # 12. Carry-forward from handoff
+    # 12. Carry-forward from handoff (with decay filter)
     items = get_handoff_items()
     if items:
         sections.append("[CARRY-FORWARD] " + " | ".join(items))
