@@ -377,6 +377,39 @@ def get_handoff_items() -> list:
         return []
 
 
+def get_handoff_summary() -> str:
+    """Build a compact last-session summary from the handoff.
+
+    Injected as [LAST-SESSION] on new sessions so the model knows
+    what just happened. Includes session number, mood, and top plans.
+    """
+    try:
+        from daemon.handoff import load_handoff
+        handoff = load_handoff()
+        if not handoff:
+            return ""
+
+        session_num = handoff.get("session_number", "?")
+        mood = handoff.get("mood_and_mode", "").strip()
+        ts = handoff.get("timestamp", "")[:16]
+
+        # Top 3 next_plans (what was planned next)
+        plans = handoff.get("next_plans", [])
+        plan_texts = [p.get("text", "")[:70] for p in plans[:3] if p.get("text")]
+
+        parts = [f"Session {session_num}"]
+        if ts:
+            parts[0] += f" ({ts})"
+        if mood:
+            parts.append(mood[:120])
+        if plan_texts:
+            parts.append("Next: " + " | ".join(plan_texts))
+
+        return " — ".join(parts)
+    except Exception:
+        return ""
+
+
 def get_current_context() -> str:
     """Get current working context (project + episode type).
 
@@ -534,14 +567,16 @@ def build_enrichment(prompt: str, is_new_session: bool = False) -> str:
     """
     sections = []
 
-    # 0a. Boot instruction on first message of session
+    # 0a. Boot instruction + last-session summary on first message
     if is_new_session:
-        sections.append(
-            "[BOOT] Hook data active — you are already context-aware. "
-            "Do NOT read session-prep.md or other files for context. "
-            "Use the injected sections below as your awareness. "
-            "Greet naturally based on this data. Never list goals or carry-forward as greeting."
-        )
+        handoff_summary = get_handoff_summary()
+        boot_lines = [
+            "[BOOT] New session. Hook data below is your real-time awareness.",
+            "Greet naturally. Never list goals or carry-forward.",
+        ]
+        if handoff_summary:
+            boot_lines.append(f"[LAST-SESSION] {handoff_summary}")
+        sections.append("\n".join(boot_lines))
 
     # 0. Build compound query from rolling buffer for better recall
     compound_query = get_compound_query(prompt)
