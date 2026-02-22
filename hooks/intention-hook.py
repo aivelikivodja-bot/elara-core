@@ -3,24 +3,30 @@
 # Licensed under the Business Source License 1.1 (BSL-1.1)
 
 """
-Intention Resolver — Claude Code UserPromptSubmit hook.
+Intention Resolver v2 — Claude Code UserPromptSubmit hook.
 
 Runs before every user prompt. Enriches context by injecting a compact
-system message with relevant corrections, workflows, goals, handoff
-items, and SEMANTIC MEMORY RECALL. Also absorbs Overwatch injection.
+system message from ALL cognitive subsystems. Full-spectrum awareness.
 
 Design principles:
   - Zero LLM calls — only ChromaDB semantic search + file reads
-  - Target output: 80-150 tokens (< 3% of context window)
+  - Target output: 150-300 tokens (< 5% of context window)
   - Fail silent — any error = no injection, never block the prompt
   - Detect frustration signals for CompletionPattern learning
   - Rolling message buffer for compound queries (better recall quality)
 
 Output format (only non-empty sections appear):
   [CONTEXT] project | episode type
+  [MOOD] valence energy openness
+  [INTENTION] current growth goal
   [RECALL] semantic memories relevant to current conversation
+  [CONV-RECALL] past conversation exchanges about this topic
+  [PRINCIPLES] crystallized rules from confirmed insights
+  [REASONING] similar problem-solving trails
+  [MILESTONES] past decisions/breakthroughs
   [GOALS] goal1 | goal2
   [SELF-CHECK] mistake → correction
+  [DECISION-CHECK] rejected entity warnings
   [WORKFLOW] name: step1 → step2 → step3
   [CARRY-FORWARD] unfinished item | promise
   [OVERWATCH] (whatever Overwatch daemon left)
@@ -306,8 +312,115 @@ def get_current_context() -> str:
     return ""
 
 
+# ---------------------------------------------------------------------------
+# NEW: Conversation recall — past dialogue about this topic
+# ---------------------------------------------------------------------------
+
+def get_relevant_conversations(query: str) -> list:
+    """Search past conversation exchanges for relevant context."""
+    try:
+        from memory.conversations import recall_conversation
+        results = recall_conversation(query, n_results=3)
+        return [c for c in results if c.get("relevance", 0) > 0.35]
+    except Exception:
+        return []
+
+
+def format_conversation_for_injection(conv: dict) -> str:
+    """Format a conversation exchange compactly."""
+    date = conv.get("date", "?")[:10]
+    # Try user_text_preview first, fall back to content
+    preview = conv.get("user_text_preview", "")
+    if not preview:
+        content = conv.get("content", "")
+        # Content format is "User: ...\n\nElara: ..."
+        if content.startswith("User: "):
+            preview = content[6:].split("\n")[0]
+    preview = " ".join(preview.split())[:70]
+    if preview:
+        return f"{date}: \"{preview}\""
+    return f"{date}: (exchange)"
+
+
+# ---------------------------------------------------------------------------
+# NEW: Principles — crystallized rules from confirmed insights
+# ---------------------------------------------------------------------------
+
+def get_relevant_principles(query: str) -> list:
+    """Search principles by semantic similarity."""
+    try:
+        from daemon.principles import search_principles
+        results = search_principles(query, n=3)
+        return [p for p in results if p.get("relevance", 0) > 0.30]
+    except Exception:
+        return []
+
+
+# ---------------------------------------------------------------------------
+# NEW: Reasoning trails — similar problems already solved
+# ---------------------------------------------------------------------------
+
+def get_relevant_reasoning(query: str) -> list:
+    """Search past reasoning trails for similar problems."""
+    try:
+        from daemon.reasoning import search_trails
+        results = search_trails(query, n=2)
+        return [r for r in results if r.get("relevance", 0) > 0.30]
+    except Exception:
+        return []
+
+
+# ---------------------------------------------------------------------------
+# NEW: Milestones — past decisions and breakthroughs
+# ---------------------------------------------------------------------------
+
+def get_relevant_milestones(query: str) -> list:
+    """Search episode milestones by semantic similarity."""
+    try:
+        from memory.episodic import get_episodic
+        episodic = get_episodic()
+        results = episodic.search_milestones(query, n_results=3)
+        return [m for m in results if m.get("relevance", 0) > 0.30]
+    except Exception:
+        return []
+
+
+# ---------------------------------------------------------------------------
+# NEW: Mood — current emotional state (cached, ~5ms)
+# ---------------------------------------------------------------------------
+
+def get_current_mood() -> dict:
+    """Get current mood state."""
+    try:
+        from daemon.mood import get_mood
+        return get_mood()
+    except Exception:
+        return {}
+
+
+# ---------------------------------------------------------------------------
+# NEW: Intention — current growth goal (~10ms)
+# ---------------------------------------------------------------------------
+
+def get_current_intention() -> str:
+    """Get current growth intention."""
+    try:
+        from daemon.awareness.intention import get_intention
+        intention = get_intention()
+        if intention:
+            return intention.get("what", "")
+    except Exception:
+        pass
+    return ""
+
+
 def build_enrichment(prompt: str) -> str:
-    """Build the compact enrichment output from all sources."""
+    """Build the compact enrichment output from all sources.
+
+    Full-spectrum awareness: mood, intention, memories, conversations,
+    principles, reasoning trails, milestones, goals, corrections,
+    decisions, workflows, handoff, overwatch, frustration detection.
+    """
     sections = []
 
     # 0. Build compound query from rolling buffer for better recall
@@ -318,8 +431,22 @@ def build_enrichment(prompt: str) -> str:
     if context:
         sections.append(f"[CONTEXT] {context}")
 
-    # 2. Semantic memory recall — the hippocampus
-    #    Uses compound query for much better matching than raw prompt
+    # 2. Mood — current emotional state (~5ms, cached)
+    mood = get_current_mood()
+    if mood:
+        v = mood.get("valence", 0)
+        e = mood.get("energy", 0)
+        o = mood.get("openness", 0)
+        desc = mood.get("description", "")
+        if desc:
+            sections.append(f"[MOOD] {desc} (v:{v:.1f} e:{e:.1f} o:{o:.1f})")
+
+    # 3. Intention — current growth goal (~10ms)
+    intention = get_current_intention()
+    if intention:
+        sections.append(f"[INTENTION] {intention[:80]}")
+
+    # 4. Semantic memory recall — the hippocampus
     memories = get_relevant_memories(compound_query)
     if memories:
         cache = get_injection_cache()
@@ -330,10 +457,51 @@ def build_enrichment(prompt: str) -> str:
         if fresh_memories:
             mem_lines = [format_memory_for_injection(m) for m in fresh_memories[:3]]
             sections.append("[RECALL] " + " | ".join(mem_lines))
-            # Update dedup cache
             update_injection_cache([m.get("memory_id", "") for m in fresh_memories[:3]])
 
-    # 3. Active goals (with decision context + build order)
+    # 5. Conversation recall — past dialogue about this topic (~100ms)
+    conversations = get_relevant_conversations(compound_query)
+    if conversations:
+        conv_lines = [format_conversation_for_injection(c) for c in conversations[:2]]
+        sections.append("[CONV-RECALL] " + " | ".join(conv_lines))
+
+    # 6. Principles — crystallized rules from confirmed insights (~100ms)
+    principles = get_relevant_principles(compound_query)
+    if principles:
+        princ_lines = []
+        for p in principles[:2]:
+            stmt = p.get("statement", "")
+            stmt = " ".join(stmt.split())[:80]
+            conf = p.get("confidence", 0)
+            princ_lines.append(f"{stmt} (conf:{conf:.1f})")
+        sections.append("[PRINCIPLES] " + " | ".join(princ_lines))
+
+    # 7. Reasoning trails — similar problems already solved (~100ms)
+    trails = get_relevant_reasoning(compound_query)
+    if trails:
+        trail_lines = []
+        for t in trails[:2]:
+            context_str = t.get("context", "")[:60]
+            status = t.get("status", "open")
+            solution = t.get("solution", "")[:40]
+            if solution:
+                trail_lines.append(f"{context_str} → solved: {solution}")
+            else:
+                trail_lines.append(f"{context_str} ({status})")
+        sections.append("[REASONING] " + " | ".join(trail_lines))
+
+    # 8. Milestones — past decisions and breakthroughs (~100ms)
+    milestones = get_relevant_milestones(compound_query)
+    if milestones:
+        ms_lines = []
+        for m in milestones[:2]:
+            event = m.get("event", "")
+            event = " ".join(event.split())[:60]
+            note_type = m.get("note_type", "milestone")
+            ms_lines.append(f"[{note_type}] {event}")
+        sections.append("[MILESTONES] " + " | ".join(ms_lines))
+
+    # 9. Active goals (with decision context + build order)
     goals = get_active_goals()
     if goals:
         lines = []
@@ -346,8 +514,7 @@ def build_enrichment(prompt: str) -> str:
                 lines.append(f"  {order}. {g['title']}")
         sections.append("[GOALS] Active build order:\n" + "\n".join(lines))
 
-    # 4. Corrections (self-check — past mistakes to avoid)
-    #    Now uses compound query for better matching
+    # 10. Corrections (self-check — past mistakes to avoid)
     corrections = get_corrections(compound_query)
     if corrections:
         lines = []
@@ -357,7 +524,7 @@ def build_enrichment(prompt: str) -> str:
             lines.append(f"  {mistake} -> {fix}")
         sections.append("[SELF-CHECK]\n" + "\n".join(lines))
 
-    # 4b. Decision checks (UDR — rejected entities in prompt)
+    # 10b. Decision checks (UDR — rejected entities in prompt)
     decision_hits = get_decision_checks(compound_query)
     if decision_hits:
         lines = []
@@ -368,7 +535,7 @@ def build_enrichment(prompt: str) -> str:
             )
         sections.append("[DECISION-CHECK] Previously decided:\n" + "\n".join(lines))
 
-    # 5. Matching workflow (also uses compound query)
+    # 11. Matching workflow
     workflows = get_workflows(compound_query)
     if workflows:
         wf = workflows[0]
@@ -377,17 +544,17 @@ def build_enrichment(prompt: str) -> str:
             chain = " -> ".join(steps)
             sections.append(f"[WORKFLOW] {wf.get('name', 'unnamed')}: {chain}")
 
-    # 6. Carry-forward from handoff
+    # 12. Carry-forward from handoff
     items = get_handoff_items()
     if items:
         sections.append("[CARRY-FORWARD] " + " | ".join(items))
 
-    # 7. Overwatch daemon injection (if pending)
+    # 13. Overwatch daemon injection (if pending)
     overwatch = get_overwatch_injection()
     if overwatch:
         sections.append(f"[OVERWATCH]\n{overwatch}")
 
-    # 8. Frustration detection (side-effect: logs pattern, adds self-check)
+    # 14. Frustration detection (side-effect: logs pattern, adds self-check)
     if detect_frustration(prompt):
         sections.append("[FRUSTRATION DETECTED] Pay extra attention to completion criteria.")
 
