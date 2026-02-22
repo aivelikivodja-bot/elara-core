@@ -2,6 +2,43 @@
 
 All notable changes to Elara Core.
 
+## [0.16.1] — 2026-02-22
+
+### Added — Goal Decision Injection (YES System)
+- **Goal `decision` field** — stores what was decided (action/plan/judgment) for each goal
+- **Goal `build_order` field** — explicit sequencing (1=first, 2=second, etc.)
+- **Intention hook upgrade** — `[GOALS]` injection now shows numbered build order with decision context instead of bare pipe-separated titles
+- **MCP tool upgrade** — `elara_goal` accepts `decision` and `build_order` params on add/update
+- **Boot summary** — sorts by build_order, shows decision context
+
+### Stats
+- 157 source files, ~39K lines Python, 240 tests, 46 MCP tools across 17 modules
+
+---
+
+## [0.16.0] — 2026-02-21
+
+### Added — Unified Decision Registry (UDR)
+- **UDR** (`daemon/udr.py`) — SQLite-backed ledger of permanent verdicts (rejected/approved/failed/revisit)
+- **`elara_udr` MCP tool** — record, check, scan, list, review, stats, boot, backfill (8 actions)
+- **Hook integration** — `[DECISION-CHECK]` injection in intention-hook.py, O(1) entity keyword scan
+- **Backfill** — auto-imports from corrections and outcomes into UDR
+- **New event**: `DECISION_RECORDED`
+
+### Stats
+- 157 source files, ~39K lines Python, 240 tests, 46 MCP tools across 17 modules
+
+---
+
+## [0.15.1] — 2026-02-21
+
+### Fixed — Security Hardening
+- Input validation across 7 modules (goals, corrections, handoff, episodes, business, reasoning, outcomes)
+- Path traversal guards, integer overflow checks, string length limits
+- Pydantic strict validation on all user-facing inputs
+
+---
+
 ## [0.15.0] — 2026-02-21
 
 ### Added — Tier System + Cognitive Continuity Chain
