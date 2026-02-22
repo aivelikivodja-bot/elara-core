@@ -84,6 +84,8 @@ def detect_and_handle_new_session():
     """Clear caches if this looks like a new session (>5min gap).
 
     Returns True if this is the first message of a new session.
+    Also runs incremental conversation ingest on new sessions so
+    semantic recall can see all prior sessions from today.
     """
     is_new = False
     try:
@@ -103,6 +105,15 @@ def detect_and_handle_new_session():
         SESSION_MARKER_FILE.write_text(str(now))
     except Exception:
         pass
+
+    # Ingest new conversations on session boundary so recall sees today's work
+    if is_new:
+        try:
+            from memory.conversations import ingest_conversations
+            ingest_conversations()
+        except Exception:
+            pass  # Never block on ingest failure
+
     return is_new
 
 
@@ -395,11 +406,16 @@ def get_current_context() -> str:
 # ---------------------------------------------------------------------------
 
 def get_relevant_conversations(query: str) -> list:
-    """Search past conversation exchanges for relevant context."""
+    """Search past conversation exchanges for relevant context.
+
+    Fetches 8 results to ensure enough survive relevance filtering.
+    Today's exchanges get a recency boost from the scoring model,
+    so they naturally rise to the top.
+    """
     try:
         from memory.conversations import recall_conversation
-        results = recall_conversation(query, n_results=3)
-        return [c for c in results if c.get("relevance", 0) > 0.35]
+        results = recall_conversation(query, n_results=8)
+        return [c for c in results if c.get("relevance", 0) > 0.30]
     except Exception:
         return []
 
@@ -563,9 +579,10 @@ def build_enrichment(prompt: str, is_new_session: bool = False) -> str:
             update_injection_cache([m.get("memory_id", "") for m in fresh_memories[:3]])
 
     # 5. Conversation recall — past dialogue about this topic (~100ms)
+    #    Show up to 5 exchanges for richer same-day context
     conversations = get_relevant_conversations(compound_query)
     if conversations:
-        conv_lines = [format_conversation_for_injection(c) for c in conversations[:2]]
+        conv_lines = [format_conversation_for_injection(c) for c in conversations[:5]]
         sections.append("[CONV-RECALL] " + " | ".join(conv_lines))
 
     # 6. Principles — crystallized rules from confirmed insights (~100ms)
