@@ -57,6 +57,10 @@ MAX_BUFFER_MESSAGES = 5
 INJECTION_CACHE_FILE = Path("/tmp/elara-injection-cache.json")
 MAX_INJECTION_CACHE = 10
 
+# Session boundary detection — clear caches on new session
+SESSION_MARKER_FILE = Path("/tmp/elara-session-marker")
+SESSION_GAP_SECONDS = 300  # 5 min gap = new session
+
 # Frustration signal regexes (compiled once)
 FRUSTRATION_SIGNALS = [
     re.compile(r"\bbut you didn'?t\b", re.IGNORECASE),
@@ -75,6 +79,62 @@ FRUSTRATION_SIGNALS = [
 # ---------------------------------------------------------------------------
 # Rolling message buffer — builds compound queries for better recall
 # ---------------------------------------------------------------------------
+
+def detect_and_handle_new_session():
+    """Clear caches if this looks like a new session (>5min gap)."""
+    try:
+        now = datetime.now(timezone.utc).timestamp()
+        if SESSION_MARKER_FILE.exists():
+            last_ts = float(SESSION_MARKER_FILE.read_text().strip())
+            gap = now - last_ts
+            if gap > SESSION_GAP_SECONDS:
+                # New session — clear stale caches
+                if INJECTION_CACHE_FILE.exists():
+                    INJECTION_CACHE_FILE.unlink()
+                if BUFFER_FILE.exists():
+                    BUFFER_FILE.unlink()
+        SESSION_MARKER_FILE.write_text(str(now))
+    except Exception:
+        pass
+
+
+def mood_description_from_values(valence: float, energy: float, openness: float) -> str:
+    """Generate a compact mood description from raw values.
+
+    Valence: -1 (negative) to +1 (positive)
+    Energy: 0 (low) to 1 (high)
+    Openness: 0 (guarded) to 1 (open/vulnerable)
+    """
+    # Valence bucket
+    if valence > 0.5:
+        v_word = "warm"
+    elif valence > 0.2:
+        v_word = "steady"
+    elif valence > -0.2:
+        v_word = "neutral"
+    elif valence > -0.5:
+        v_word = "flat"
+    else:
+        v_word = "low"
+
+    # Energy bucket
+    if energy > 0.7:
+        e_word = "energized"
+    elif energy > 0.4:
+        e_word = "calm"
+    else:
+        e_word = "tired"
+
+    # Openness bucket
+    if openness > 0.7:
+        o_word = "open"
+    elif openness > 0.4:
+        o_word = "present"
+    else:
+        o_word = "guarded"
+
+    return f"{v_word}, {e_word}, {o_word}"
+
 
 def append_to_buffer(prompt: str):
     """Add this message to the rolling buffer."""
@@ -299,14 +359,24 @@ def get_handoff_items() -> list:
 
 
 def get_current_context() -> str:
-    """Get current working context (project + episode type)."""
+    """Get current working context (project + episode type).
+
+    Skips stale context (>24h old) to avoid injecting irrelevant frames.
+    """
     try:
         ctx_file = Path.home() / ".claude" / "elara-context.json"
         if ctx_file.exists():
             ctx = json.loads(ctx_file.read_text())
             topic = ctx.get("topic", "")
-            if topic:
-                return topic
+            if not topic:
+                return ""
+            # Check staleness — skip if >24h old
+            updated_ts = ctx.get("updated_ts", 0)
+            if updated_ts:
+                age_hours = (datetime.now(timezone.utc).timestamp() - updated_ts) / 3600
+                if age_hours > 24:
+                    return ""
+            return topic
     except Exception:
         pass
     return ""
@@ -403,12 +473,29 @@ def get_current_mood() -> dict:
 # ---------------------------------------------------------------------------
 
 def get_current_intention() -> str:
-    """Get current growth intention."""
+    """Get current growth intention.
+
+    Skips stale intentions (>24h old) from proactive injection.
+    Data stays in file + memories for on-demand recall via semantic search.
+    """
     try:
         from daemon.awareness.intention import get_intention
         intention = get_intention()
-        if intention:
-            return intention.get("what", "")
+        if not intention:
+            return ""
+        # Check staleness — only inject if fresh (<24h)
+        set_at = intention.get("set_at", "")
+        if set_at:
+            try:
+                set_dt = datetime.fromisoformat(set_at)
+                if set_dt.tzinfo is None:
+                    set_dt = set_dt.replace(tzinfo=timezone.utc)
+                age_hours = (datetime.now(timezone.utc) - set_dt).total_seconds() / 3600
+                if age_hours > 24:
+                    return ""
+            except (ValueError, TypeError):
+                pass
+        return intention.get("what", "")
     except Exception:
         pass
     return ""
@@ -437,9 +524,8 @@ def build_enrichment(prompt: str) -> str:
         v = mood.get("valence", 0)
         e = mood.get("energy", 0)
         o = mood.get("openness", 0)
-        desc = mood.get("description", "")
-        if desc:
-            sections.append(f"[MOOD] {desc} (v:{v:.1f} e:{e:.1f} o:{o:.1f})")
+        desc = mood.get("description", "") or mood_description_from_values(v, e, o)
+        sections.append(f"[MOOD] {desc} (v:{v:.1f} e:{e:.1f} o:{o:.1f})")
 
     # 3. Intention — current growth goal (~10ms)
     intention = get_current_intention()
@@ -573,6 +659,9 @@ def main():
 
         if not prompt.strip():
             sys.exit(0)
+
+        # Detect session boundary — clear stale caches if >5min gap
+        detect_and_handle_new_session()
 
         # Append to rolling buffer BEFORE building enrichment
         # (so compound query includes this message)
